@@ -10,7 +10,7 @@ Sinhron has not yet had an independent security audit. The design uses well-stud
 
 - Everything you send is **end-to-end encrypted** on your device. There is no way to turn it off.
 - The server stores and forwards **only encrypted data**. Even someone with full access to the server and its database cannot read your messages or see your photos.
-- The server still sees some **metadata**: who talks to whom, when, and roughly how much. We are honest about this below.
+- The server still sees some **metadata**, such as who is in which chat, when messages arrive and roughly how big they are. We are honest about this below.
 - Your account is a key on your device, backed up by **24 words** that never leave your hands.
 - Your local data is **encrypted on the device**, and you can lock the app with Face ID or Touch ID.
 - Sinhron sends **no telemetry** to anyone.
@@ -42,20 +42,23 @@ A Sinhron server has to route messages, so it inevitably learns some information
 
 | The server can see | The server cannot see |
 |---|---|
-| That an account (a public key) exists | Your 24-word key or any private key |
-| Which devices are in which chat, so it can deliver messages | The content of any message |
-| When messages are sent and delivered | Your name, chat names or group names |
-| Approximate message sizes (in 512-byte buckets) | Photos, videos, files and voice messages |
-| Approximate sizes of encrypted attachments, and when they are uploaded and downloaded | File names and file types |
-| Your IP address when you connect | Whether a message is text, a reaction, an edit or a receipt |
+| That an account (a public key) exists, and which devices it has | Your 24-word key or any private key |
+| Which devices are in which chat, so it can deliver ordinary messages and let members into calls | The content of any message |
+| When messages are sent and delivered, and whom a sealed envelope is for | Which chat a sealed message belongs to |
+| Approximate message sizes (in 512-byte buckets) | Which account sent a sealed message, once access keys have been shared |
+| Approximate sizes of encrypted attachments, and when they are uploaded and downloaded | Your name, chat names or group names |
+| Your IP address when you connect, unless you use a proxy such as Tor | Photos, videos, files and voice messages, their names and types |
+| Each chat's disappearing-messages timer, so it can delete stored copies on time | Whether a message is text, a reaction, an edit or a receipt |
 | The size and update frequency of your encrypted backup | What is inside your backup |
 | That a call is taking place and who joined it | What is said or shown in a call |
-| | Which chats have disappearing messages |
+| | Whom you have blocked: blocking happens only on your device |
 | | What you search for |
 
 <Callout type="note" title="Who sent what">
 
-Today the server can tell which device sent a message, because full sealed sender (hiding the sender from the server) is not built yet. It is on the [roadmap](/docs/roadmap).
+Most messages travel with **sealed sender**. Each recipient gets the message in its own sealed envelope (HPKE, [RFC 9180](https://www.rfc-editor.org/rfc/rfc9180)), so the server does not learn which chat it belongs to. Once your app has the access keys of the people in a chat, which are shared inside the encrypted chat, it sends these envelopes without signing in to your account, so the server does not learn which account sent them either. It still sees when an envelope arrives and whom it is for. The first messages of a brand-new chat are sent signed in, until those keys have been shared.
+
+To hide your IP address as well, turn on **Proxy (Tor)** in Privacy and point it at a SOCKS5 proxy such as Orbot. Calls do not go through the proxy.
 
 </Callout>
 
@@ -81,6 +84,7 @@ LiveKit does see which accounts joined a call, when, and from which IP addresses
 Your chats are stored in a local database that is **fully encrypted with SQLCipher**, a widely used encrypted version of SQLite (AES-256). The encryption key is derived from your 24-word key.
 
 - **Decrypted photos and videos stay in memory.** They are not saved to disk. When the system requires a file, for example to share a document or record a voice message, Sinhron uses a short-lived temporary file and deletes it right away.
+- **Protected files and keys.** On iOS, the app's files are also protected by the system until the phone is first unlocked after a restart. The key that opens your database is kept in the iOS Keychain, on this device only, so Sinhron reopens without asking for your 24 words, and your phone's passcode and app lock are what protect it.
 - **Photos lose their metadata.** Before sending, each photo is re-encoded on your device, so location data and other hidden metadata never leave your phone.
 - **App lock.** You can require Face ID, Touch ID or your device passcode to open Sinhron, immediately or after a few minutes in the background.
 - **App switcher cover.** When Sinhron is in the background, a blurred cover hides your chats from the app switcher.

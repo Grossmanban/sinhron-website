@@ -44,7 +44,7 @@ Helpers for connecting calls across home routers, firewalls and mobile networks.
 
 ### Sealed sender
 
-A technique that hides who sent a message from the server, which then only knows who should receive it. In Sinhron, sealed sender is partly implemented today; the full version with an extra encrypted envelope (HPKE, [RFC 9180](https://www.rfc-editor.org/rfc/rfc9180)) is on the roadmap.
+A technique that hides who sent a message from the server, which then only knows who should receive it. In Sinhron, each recipient gets the message in its own sealed envelope (HPKE, [RFC 9180](https://www.rfc-editor.org/rfc/rfc9180)), so the server does not learn which chat it belongs to. Once access keys have been shared inside the chat, envelopes are sent without signing in, so the server does not learn which account sent them either. The first messages of a new chat are still sent signed in. Your IP address can be hidden too, with the optional Tor proxy.
 
 ### BIP-39 and the 24-word key
 

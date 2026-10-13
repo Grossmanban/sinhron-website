@@ -151,7 +151,7 @@ export const en = {
     video: "Video",
     speaker: "Speaker",
     end: "End",
-    note: "Group calls are on the roadmap.",
+    note: "Group calls are built and in beta: not yet tested on real devices.",
   },
   selfHost: {
     eyebrow: "Self-host",

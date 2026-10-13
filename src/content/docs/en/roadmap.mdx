@@ -2,7 +2,7 @@ This page shows where Sinhron stands today and what comes next. It reflects the 
 
 ## Where we are
 
-Sinhron is in **early beta**. The core is in place: end-to-end encrypted chats and groups, a working server, encrypted storage and backup, one-on-one calls, and a polished messaging experience. The project's technical plan is divided into ten phases, from the first scaffolding to a security audit and store distribution. About six of them are complete.
+Sinhron is in **early beta**. The core is in place: end-to-end encrypted chats and groups, a working server, encrypted storage and backup, calls, several devices per account, sealed sender, and a polished messaging experience. The project's technical plan is divided into ten phases, from the first scaffolding to a security audit and store distribution. About eight of them are covered in code. Much of it still needs testing on real phones.
 
 What is still missing before a public release is mostly about trust and reach: testing on real devices, an independent security audit, signed builds and distribution.
 
@@ -15,31 +15,39 @@ What is still missing before a public release is mostly about trust and reach: t
 - Encrypted backup of your chat membership on the server, restorable with your 24 words.
 - Fully encrypted local database (SQLCipher).
 - Message padding to hide exact lengths, and push notification payloads without content.
-- Safety numbers (60 digits or QR code) with warnings when a contact's key changes.
+- Safety numbers (60 digits or QR code, scannable with the camera) with warnings when a contact's key changes, including for each member of a group.
+- Sealed sender: the server sees neither which chat a message belongs to nor which account sent it. An optional SOCKS5 / Tor proxy also hides your IP address.
+- Several devices per account: link a new device by scanning a QR code; each device has its own key, and removing a device locks it out. Your main identity key stays on your first device only.
 
 **Server**
 
 - Rust server with WebSocket delivery, offline catch-up, rate limiting and automatic cleanup.
 - Docker Compose deployment with automatic TLS (Caddy and Let's Encrypt).
 - Encrypted attachment storage.
+- Old messages are removed a whole month at a time.
+- Automated tests for the server, the encryption core and the app run on every change (GitHub Actions).
 
 **Calls**
 
 - One-on-one audio and video calls through LiveKit, end-to-end encrypted with SFrame (RFC 9605).
+- Group calls with per-participant keys and a video grid (built; device testing pending).
 - Calls through restrictive networks via TURN over TLS on port 443.
 
 **Messaging experience**
 
-- Replies, reactions, editing, deleting for everyone, pinned messages, forwarding and multi-select.
+- Replies, reactions, editing and deleting for everyone (within 24 hours), pinned messages shared with the whole chat, forwarding and multi-select.
+- Display names in groups, shared by each person inside the encryption, and a Chat info screen.
 - Text formatting, including spoilers; large emoji; link and phone number detection.
 - Delivery and read receipts and typing indicators (both can be turned off).
-- Folders, archive, pinned and muted chats, drafts, swipe actions and on-device search.
+- Folders, archive, pinned and muted chats (reordered by dragging), drafts and swipe actions.
+- Fast on-device full-text search that opens the chat at the found message.
 - Disappearing messages, from 5 minutes to 4 weeks.
 
 **Privacy and comfort**
 
 - App lock with Face ID, Touch ID or passcode, and a cover in the app switcher.
 - A single, honest privacy screen.
+- Blocking that stays on your device, and a switch to turn off incoming calls.
 - Themes (System, Light, Dark, Black OLED), six accent colours and chat wallpapers.
 - English and Russian.
 - Accessibility work: VoiceOver labels, large text, WCAG AA contrast, Reduce Motion.
@@ -47,15 +55,14 @@ What is still missing before a public release is mostly about trust and reach: t
 
 ## In progress
 
-- **Photos, video, files and voice messages.** Implemented and tested in code, including albums, a gallery, voice messages with hands-free recording, and optional link previews. Still to do: verification on real devices, and video improvements such as a preview frame, compression and recording video from the camera.
+- **Photos, video, files and voice messages.** Implemented and tested in code, including albums, a gallery, recording video with the camera, voice messages with hands-free recording, and optional link previews. Still to do: verification on real devices, and a video preview frame and compression.
 - **Calls across networks on a real server.** The setup for getting calls through NAT and firewalls is in place, but a full acceptance test on a deployed server with devices on different networks is still pending.
-- **Several devices per account.** Linking a new device by scanning a QR code is in progress. Today one 24-word key equals one device.
-- **Sealed sender.** Hiding who sent a message from the server is partially done. The full version adds an extra encrypted envelope based on HPKE (RFC 9180).
+- **Testing on two real phones.** Several devices per account, group calls and blocking are built and tested in code, but haven't yet been tried on real iPhones.
+- **Message requests.** A way to decide whether to accept a chat from someone new is still being designed.
 - **Push notifications and incoming calls when the app is closed.** The server side is ready. The app side needs an Apple developer certificate, which has not been set up yet.
 
 ## Next
 
-- **Group calls.** The interface and much of the server signalling already exist. One-on-one calls come first, then group calls.
 - **First releases** on [GitHub Releases](https://github.com/Grossmanban/sinhron-website/releases).
 - **Security audit preparation,** followed by an independent audit.
 - **Reproducible builds,** so anyone can check that a published app matches the source code.

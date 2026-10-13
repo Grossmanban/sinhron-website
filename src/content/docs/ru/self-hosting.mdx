@@ -228,7 +228,9 @@ docker compose -f docker-compose.yml logs -f caddy
 15 3 * * * docker run --rm -v server_sinhron_media:/m:ro -v ~/backups:/b alpine tar czf /b/sinhron-media-$(date +\%F).tgz -C /m .
 ```
 
-Файл `.env` сохраняйте только в зашифрованном виде:
+В репозитории есть и готовый скрипт `server/scripts/backup.sh`: он делает все три части за раз — дамп Postgres, архив файлов и копию `.env`, зашифрованную GPG (пароль берётся из файла, указанного в `SINHRON_BACKUP_PASSFILE`), и хранит копии за последние 14 дней.
+
+Если делаете вручную, файл `.env` сохраняйте только в зашифрованном виде:
 
 ```bash
 gpg --symmetric --cipher-algo AES256 .env

@@ -32,7 +32,7 @@ No. A web client is not planned for version 1.0. Browsers make it much harder to
 
 ## Can I use it on several devices?
 
-Not yet. Today one account works on one device. Linking additional devices by scanning a QR code is in progress. In Sinhron's design, each device gets its own keys, rather than sharing one private key between devices.
+Yes, in beta. The new device shows a QR code, and you scan it with the device where you created your account; on any other device of yours, that step asks for your 24 words. You can also simply type your 24 words on the new device. Each device gets its own key rather than sharing one private key, and your main identity key stays on your first device only. Once linked, the new device receives the recent messages of each chat (up to 200) from one of your other devices. You can remove a device in the Devices list, and the server stops letting it in. This has not yet been tested on two real iPhones.
 
 ## How many people can a server handle?
 

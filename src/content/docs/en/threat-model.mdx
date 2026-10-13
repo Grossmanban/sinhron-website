@@ -12,13 +12,13 @@ Sinhron is built for **personal, family and team privacy**. It is not designed t
 
 **A compromised or curious server.** This is the central design goal. Even someone with full access to the server and its database dump gets only encrypted messages, encrypted attachments and an encrypted backup they cannot open. They cannot forge messages, because every message is signed by its sender and checked by the recipients. They cannot add themselves to a call, because call access is only granted to members of the chat.
 
-**Push notification providers.** Apple and Google deliver notifications, so they never receive message text, sender names or chat identifiers. Notifications only say that something new has arrived.
+**Push notification providers.** Apple and Google deliver notifications, so they never receive message text, sender names or chat identifiers. A notification carries only your unread count.
 
-**A malicious or removed group member.** Only current members of a chat can read it. When someone is removed, the keys change and they cannot read anything sent afterwards. Thanks to forward secrecy, a key leaked today does not reveal yesterday's messages, and thanks to post-compromise security, a group recovers after a device compromise once keys are refreshed.
+**A malicious or removed group member.** Only current members of a chat can read it. When someone is removed, the keys change and they cannot read anything sent afterwards. Thanks to forward secrecy, a key leaked today does not reveal yesterday's messages, and thanks to post-compromise security, a group recovers after a device compromise once keys are refreshed. Edits and "delete for everyone" are accepted only within 24 hours of sending, so a member with a modified app cannot rewrite old history on other people's screens.
 
-**A lost or stolen phone.** The local database is encrypted with SQLCipher, and you can turn on app lock with Face ID, Touch ID or your passcode. Decrypted photos and videos are kept in memory rather than saved to disk.
+**A lost or stolen phone.** The local database is encrypted with SQLCipher, and the search index lives inside that same encrypted database. On top of that, iOS file protection keeps the app's files locked until the phone is first unlocked after a restart. The key that opens the database is kept in the iOS Keychain, on this device only, so an unlocked phone opens your chats: the barriers are your phone's passcode and Sinhron's app lock with Face ID, Touch ID or your passcode. Decrypted photos and videos are kept in memory rather than saved to disk.
 
-**Impersonation.** You can compare a 60-digit safety number with each contact, in person or by scanning a QR code. If their key ever changes, Sinhron warns you.
+**Impersonation.** You can compare a 60-digit safety number with each contact, in person or by scanning a QR code; in a group, every member has their own. If their key ever changes, Sinhron warns you. Display names are chosen by each person, so the safety number, not the name, is what proves who someone is.
 
 **Call eavesdropping.** Calls are end-to-end encrypted with SFrame, using keys derived from the chat's MLS keys. The call server forwards frames it cannot decrypt. Any tampering with encrypted frames is detected and rejected.
 
@@ -32,7 +32,7 @@ Some threats are beyond what any app can solve, or beyond what Sinhron currently
 - **A compromised device.** If your phone's operating system is compromised, or someone has physical access to it while it is unlocked, they can see what you see.
 - **The people you talk to.** A chat partner can always take a screenshot, photograph the screen or forward what you wrote. Encryption cannot stop that, and neither can disappearing messages.
 - **Social engineering.** If someone tricks you into revealing your 24-word key, they can take over your account.
-- **Network-level anonymity.** Sinhron does not hide your IP address from the server. If you need that, you can combine it with other network tools.
+- **Network-level anonymity.** Sinhron can hide your IP address from the server only through an optional SOCKS5 proxy such as Tor, which you install separately, and calls do not use it. Hiding the fact that you use Sinhron at all, or resisting large-scale traffic analysis, is a job for network tools like Tor.
 - **Root access to the server.** An attacker who controls the server machine can disrupt service, tamper with the server software and see metadata. They still cannot read message content, but the operator is responsible for keeping the machine secure.
 
 ## Known limitations today
@@ -40,18 +40,24 @@ Some threats are beyond what any app can solve, or beyond what Sinhron currently
 We prefer to list these openly:
 
 1. **No independent security audit yet.** One is planned before a public launch.
-2. **Metadata is visible to the server.** The operator can see who talks to whom, when, and approximately how much, as well as IP addresses. See [What the server sees](/docs/security).
-3. **Sealed sender is only partial.** The server can currently tell which device sent a message. Fully hiding the sender requires an extra encrypted envelope (based on HPKE, RFC 9180), which is not built yet.
-4. **Size and timing patterns.** Messages are padded to 512-byte buckets and attachments are padded too, but there is no cover traffic. Read receipts and typing indicators are also encrypted messages, so they add to the visible traffic pattern. During calls, packet sizes and timing can reveal when someone is speaking.
-5. **Call metadata.** The call server sees who joined a call, when and from where.
-6. **One device per account.** Linking several devices is not available yet.
-7. **Incoming calls only while the app is open,** and push notifications are not enabled yet. Both need an Apple developer certificate.
-8. **iOS file protection class is not set yet.** The database is encrypted with SQLCipher, but the extra iOS data protection level for files is still on the to-do list.
-9. **Short-lived temporary files.** Sharing a file, recording a voice message or picking a file from your library briefly creates a temporary file, which is deleted right after. Voice messages are played through a local-only connection on the device while they play.
-10. **Link previews reveal the sender's IP** to the website, if you turn them on. They are off by default, and recipients never contact the website.
-11. **Pending invitations.** When you add someone who is offline, the encrypted invitation waits on the server for up to 7 days.
-12. **No reproducible builds yet,** so you cannot yet independently verify that a published app was built from this exact source code.
-13. **Media and calls on real devices.** Media is not yet verified on a real device, and calls across different networks have not yet been fully tested on a deployed server.
+2. **Metadata is visible to the server.** The operator can see which accounts and devices are in which chats (it needs this to deliver ordinary messages and to admit people to calls), when messages are sent and delivered, approximately how big they are, and each chat's disappearing-messages timer. See [What the server sees](/docs/security).
+3. **Sealed sender still leaves traces.** Most messages travel in a sealed envelope: the server does not learn which chat they belong to, and once the keys for anonymous sending have been shared, not which account sent them either. It still sees when each envelope arrives, whom it is for, and the timer attached to it. The first messages of a brand-new chat are sent with your account signed in until those keys have reached everyone.
+4. **Your IP address is visible unless you use a proxy.** An optional SOCKS5 proxy setting, for example Tor through the Orbot app, hides your IP address from the server. Without it the server sees your IP. Calls never go through the proxy, and the proxy has not yet been tried on a real iPhone.
+5. **Size and timing patterns.** Messages are padded to 512-byte buckets and attachments are padded too, but there is no cover traffic. Read receipts and typing indicators are also encrypted messages, so they add to the visible traffic pattern. During calls, packet sizes and timing can reveal when someone is speaking.
+6. **Attachment metadata.** The server sees the rounded size of each encrypted file, when it was uploaded and by which device, and when and by whom it is downloaded. Anyone registered on the server who knows a file's hash can download it, but without the key it is useless.
+7. **Call metadata.** The call server sees who joined a call, when and from which IP address.
+8. **Several devices: the 24 words are still the master key.** Your identity key stays on your first device only. Every other device has its own key and certificate, and removing a device locks it out on the server. But anyone who knows your 24 words owns the account, so a stolen phone together with the words can only be dealt with by creating a new account. Someone who talks you into scanning *their* QR code gets access to your messages. The list of your account's devices is visible on the server. Several devices per account have not yet been tested on two real iPhones.
+9. **Blocking stays on your device.** The server never learns whom you blocked. That also means it cannot enforce it: a blocked member of a group is still in the group and can still read your messages there, and group calls from them are not declined.
+10. **Display names are self-declared.** Anyone can call themselves anything, including someone else's name. Invisible and text-direction characters are removed, so a name cannot hide a difference, but only the safety number tells two people with the same name apart.
+11. **Edit and delete window.** Edits and "delete for everyone" are accepted only within 24 hours of sending, plus a day for delivery. The limit is checked against the recipient's clock, and a device that comes online more than a day after an edit will not apply it.
+12. **Incoming calls only while the app is open,** and push notifications are not enabled yet. Both need an Apple developer certificate.
+13. **Short-lived temporary files.** Sharing a file, recording a voice message or picking a file from your library briefly creates a temporary file, which is deleted right after. Voice messages are played through a local-only connection on the device while they play. As in any SQLite database, pieces of deleted messages can stay inside the encrypted database file until they are overwritten.
+14. **Link previews reveal the sender's IP** to the website, if you turn them on, unless you use the proxy. They are off by default, and recipients never contact the website.
+15. **Pending invitations.** When you add someone who is offline, the encrypted invitation waits on the server for up to 7 days.
+16. **Disappearing messages** start counting down on the recipient's phone when the message arrives, not when it is read, and the other person can save them before they disappear.
+17. **A group member can stall group changes.** The server orders changes to a group without seeing them, so a member with a modified app can temporarily block other members' changes. This disrupts the group but does not reveal anything.
+18. **No reproducible builds yet,** so you cannot yet independently verify that a published app was built from this exact source code.
+19. **Not yet verified on real devices.** Media, one-on-one and group calls, the Keychain and iOS file protection are covered by tests but have not yet been checked on a real iPhone, and calls across different networks have not yet been fully tested on a deployed server.
 
 ## Reporting a vulnerability
 

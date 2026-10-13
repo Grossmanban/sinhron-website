@@ -243,7 +243,9 @@ A daily schedule with `crontab -e` might look like this:
 15 3 * * * docker run --rm -v server_sinhron_media:/m:ro -v ~/backups:/b alpine tar czf /b/sinhron-media-$(date +\%F).tgz -C /m .
 ```
 
-Encrypt `.env` and keep the copy off the server:
+The repository also ships `server/scripts/backup.sh`, which does all three in one go: a Postgres dump, a media archive and a GPG-encrypted copy of `.env` (the passphrase is read from the file named in `SINHRON_BACKUP_PASSFILE`), keeping the last 14 days.
+
+To do it by hand, encrypt `.env` and keep the copy off the server:
 
 ```bash
 gpg --symmetric --cipher-algo AES256 .env

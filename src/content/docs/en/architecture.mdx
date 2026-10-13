@@ -41,17 +41,17 @@ The app is split into two layers with a strict boundary between them.
 
 - **Cryptography:** MLS group encryption (through OpenMLS), SFrame call keys, the 24-word BIP-39 key and the keys derived from it, attachment encryption.
 - **Storage:** a local database encrypted with SQLCipher.
-- **Networking:** the WebSocket connection, HTTPS requests and optional certificate pinning, all over rustls.
+- **Networking:** the WebSocket connection, HTTPS requests, optional certificate pinning and an optional SOCKS5 proxy (for example Tor), all over rustls.
 - **Sync:** applying incoming messages in order, removing duplicates and catching up after being offline.
 
-The two layers talk through **flutter_rust_bridge**, which generates the bindings automatically. Private keys never cross into the Flutter side; only what the screen needs to show does. Decrypted photos and videos are kept in memory rather than written to disk.
+The two layers talk through **flutter_rust_bridge**, which generates the bindings automatically. Private keys are created and used only in Rust. The Flutter side gets what the screen needs to show; beyond that, it only passes the device key to the iOS Keychain for safekeeping and hands call keys to the call library, in memory. Decrypted photos and videos are kept in memory rather than written to disk.
 
 ## The server
 
 The server is deliberately simple, and deliberately not trusted with secrets.
 
-- **sinhron-server** is written in Rust with Axum and Tokio. It registers accounts by public key (no passwords: devices prove who they are by signing a random challenge), stores KeyPackages, delivers encrypted messages over WebSockets, keeps each user's encrypted backup, stores encrypted attachments, relays call signalling, and issues call tickets and TURN credentials. It also applies rate limits and deletes old data on schedule.
-- **PostgreSQL 16** stores accounts, group membership needed for delivery, and encrypted messages. Messages are kept for 14 days by default so offline devices can catch up.
+- **sinhron-server** is written in Rust with Axum and Tokio. It registers accounts and their devices by public key (no passwords: devices prove who they are by signing a random challenge), stores KeyPackages, passes the sealed bundle when a new device is linked by QR code, delivers encrypted messages over WebSockets, keeps each user's encrypted backup, stores encrypted attachments, relays call signalling, and issues call tickets and TURN credentials. It also applies rate limits and deletes old data on schedule.
+- **PostgreSQL 16** stores accounts and their devices, group membership needed for delivery, and encrypted messages and sealed envelopes. Messages are kept for 14 days by default so offline devices can catch up.
 - **Blob storage** is a Docker volume holding encrypted attachments, each named by the SHA-256 hash of its encrypted contents. Attachments are removed after 90 days without access.
 - **Caddy** handles TLS certificates automatically and routes port 443 by host name.
 - **LiveKit** forwards encrypted call media.
@@ -66,12 +66,13 @@ Here is what happens when you send a message:
 1. **You tap Send.** The Flutter interface hands the text to the Rust core.
 2. **The core packs it.** The message is wrapped in a small typed envelope (so it can carry replies, reactions, edits, attachments or timers) and padded to a multiple of 512 bytes.
 3. **The core encrypts and signs it** as an MLS message for the chat's group, using the group's current keys.
-4. **The app sends it** over a secure WebSocket to the server, with a unique message ID.
-5. **The server stores the ciphertext** and confirms receipt. You see the first tick.
-6. **The server delivers it** to the devices of every chat member that is online. Devices that are offline receive it when they reconnect, as long as it is within the retention period.
-7. **If push is configured,** the recipient's phone gets a notification without any content, which wakes the app to fetch the message.
-8. **The recipient's core checks and decrypts it.** It verifies the sender's signature, decrypts the message, discards duplicates and stores it in the encrypted local database. Only then does it appear on screen.
-9. **Receipts flow back.** The recipient's app sends encrypted "delivered" and, if enabled, "read" receipts, which update your ticks.
+4. **The core seals it.** When the recipients have published their delivery keys, the core puts the MLS message into a separate sealed envelope (HPKE) for each recipient, so the server cannot tell which chat it belongs to. Otherwise the message is sent as it is.
+5. **The app sends it** with a unique message ID. If the app holds the access keys of everyone in the chat, sealed envelopes go over HTTPS without signing in to your account; otherwise they go over the secure WebSocket of your signed-in session. If you use a proxy, both go through it.
+6. **The server stores the ciphertext** and confirms receipt. You see the first tick. A sealed envelope is stored only for its recipient, with no link to the chat.
+7. **The server delivers it** to every device of every recipient that is online, including your own other devices if you have linked several. Devices that are offline receive it when they reconnect, as long as it is within the retention period.
+8. **If push is configured,** the recipient's phone gets a notification without any content, which wakes the app to fetch the message.
+9. **The recipient's core checks and decrypts it.** It opens the sealed envelope if there is one, verifies the sender's signature, decrypts the message, discards duplicates and stores it in the encrypted local database. Only then does it appear on screen.
+10. **Receipts flow back.** The recipient's app sends encrypted "delivered" and, if enabled, "read" receipts, which update your ticks.
 
 **Attachments** take a short detour. Before step 3, the core encrypts the file with a fresh random key (AES-256-GCM) and uploads the encrypted file over HTTPS. The key, the file's hash and its size travel inside the MLS message, so only chat members can download and decrypt the file.
 
@@ -85,7 +86,7 @@ Here is what happens when you send a message:
 6. **Rotating.** If the chat's MLS keys change during the call, the call keys change with them.
 7. **Recovering.** If the network drops, the app gives the connection 30 seconds to recover before ending the call.
 
-Today calls are one-on-one only. Group calls reuse the same design and are on the [roadmap](/docs/roadmap).
+Calls work in one-on-one chats and in groups. A group call is possible in chats of up to 32 people: everyone else in the chat is invited, people can join late, and the call goes on until only one person is left. Each participant has their own SFrame key, derived from the chat's shared MLS secret, and every device sets the keys of everyone in the room. Group calls are built but have not yet been tested on real devices.
 
 ## Standards
 
@@ -94,7 +95,7 @@ Sinhron relies on published standards rather than custom cryptography:
 - **[RFC 9420](https://www.rfc-editor.org/rfc/rfc9420): The Messaging Layer Security (MLS) Protocol.** End-to-end encryption for one-on-one and group chats, with forward secrecy and post-compromise security.
 - **[RFC 9605](https://www.rfc-editor.org/rfc/rfc9605): Secure Frame (SFrame).** End-to-end encryption of audio and video frames in calls, with keys derived from MLS.
 - **[BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki): Mnemonic code for generating deterministic keys.** The 24-word key that your account is derived from.
-- **[RFC 9180](https://www.rfc-editor.org/rfc/rfc9180): Hybrid Public Key Encryption (HPKE).** Used inside MLS, and planned for the sealed sender envelope that will hide who sent a message.
+- **[RFC 9180](https://www.rfc-editor.org/rfc/rfc9180): Hybrid Public Key Encryption (HPKE).** Used inside MLS, for the sealed sender envelopes that hide which chat a message belongs to, and for handing keys to a new device linked by QR code.
 
 You can also browse these on the IETF [Datatracker](https://datatracker.ietf.org/).
 
