@@ -1,0 +1,23 @@
+A long day of work on the app, all of it done without a phone in hand. Here is what changed, and what still needs a real iPhone before we can call it finished.
+
+## New
+
+- **@mentions in groups.** Type @ and pick a member. A mention points at the person's key, not their name, so it stays correct when names change. If someone mentions you, the chat gets an @ badge, and the notification comes through even when the chat is muted.
+- **Profile photos.** Set a photo for your profile. It is sent inside the encryption, only to chats you're actually talking in, and it is re-encoded twice, once on your phone and once on theirs, so location and camera details never travel with it.
+- **Screen recording notes.** In chats with disappearing messages, everyone already saw a note when someone took a screenshot. Now recording or mirroring the screen is noted too, once per recording.
+
+## Fixed
+
+We reviewed the whole day's changes and fixed what we found, with a test for each fix. Among them:
+
+- a new contact could accidentally "accept" their own message request;
+- deleted messages could leave traces in the on-device search index;
+- a screened-out call could tell the caller your phone was online.
+
+## Tested
+
+A new automated test runs two complete clients against each other: names, pins, edits and deletes within the 24-hour window, screenshot notes and timers all make the round trip through real MLS encryption (the network and sealed delivery have their own tests). It runs on every change.
+
+## Not yet
+
+None of this has been tried on a real iPhone yet. That comes next, together with push notifications, which need an Apple developer account. The [Roadmap](/docs/roadmap) has the full picture.
