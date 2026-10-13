@@ -47,7 +47,7 @@ Every attachment is encrypted on your phone with a fresh key before it is upload
 
 - **Photos.** Send from the camera or your library, up to 10 at once, with a caption. Several photos arrive together as an album. Before sending, each photo is re-encoded on your device, which strips location (GPS) and other hidden metadata.
 - **Gallery.** Tap a photo to open it full screen. Swipe through every photo in the chat, pinch or double-tap to zoom, swipe down to close. You can share a photo or save it to your library.
-- **Video.** Record a video with the camera (up to 3 minutes) or send one from your library. Playback happens from memory, so the decrypted video is never written to disk. Videos don't have a preview frame yet.
+- **Video.** Record a video with the camera (up to 3 minutes) or send one from your library. Large clips are compressed to 720p on your phone before they're encrypted, and a still frame travels with the video (encrypted, like a photo thumbnail) so the chat shows a preview. Playback happens from memory, so the decrypted video is never written to disk.
 - **Files.** Send documents of any type. Open or share them with other apps; the temporary copy is deleted as soon as you are done.
 - **Voice messages.** Hold the microphone to record, slide left to cancel, or slide up to lock and keep recording hands-free. Play back at 1×, 1.5× or 2×; consecutive voice messages play one after another.
 - **Link previews.** Off by default. If you turn them on, the preview is built by your phone when you send; the people you send it to never contact the website. See [Security](/docs/security).
@@ -76,7 +76,7 @@ A few things to know:
 
 - The timer starts when a message is sent (for you) or when it arrives on the other phone, not when it is read.
 - The server can't read disappearing messages, but it does know a chat's timer: it uses it to delete that chat's stored encrypted messages early.
-- Disappearing messages protect against leaks later on. They cannot stop the other person from taking a screenshot.
+- Disappearing messages protect against leaks later on. They cannot stop the other person from taking a screenshot. On iPhone, if someone takes a screenshot while a chat with disappearing messages is open, everyone in the chat sees a note about it. A modified app or a second phone's camera won't trigger it, so treat it as a courtesy, not protection.
 
 ## Folders and archive
 
