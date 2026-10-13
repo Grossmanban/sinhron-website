@@ -1,0 +1,75 @@
+This page shows where Sinhron stands today and what comes next. It reflects the project's internal status tracking. We do not give dates: things ship when they are ready and tested.
+
+## Where we are
+
+Sinhron is in **early beta**. The core is in place: end-to-end encrypted chats and groups, a working server, encrypted storage and backup, one-on-one calls, and a polished messaging experience. The project's technical plan is divided into ten phases, from the first scaffolding to a security audit and store distribution. About six of them are complete.
+
+What is still missing before a public release is mostly about trust and reach: testing on real devices, an independent security audit, signed builds and distribution.
+
+## Done
+
+**Encryption and accounts**
+
+- End-to-end encrypted one-on-one and group chats using MLS (RFC 9420).
+- Accounts without email, phone number or password, based on a 24-word BIP-39 key.
+- Encrypted backup of your chat membership on the server, restorable with your 24 words.
+- Fully encrypted local database (SQLCipher).
+- Message padding to hide exact lengths, and push notification payloads without content.
+- Safety numbers (60 digits or QR code) with warnings when a contact's key changes.
+
+**Server**
+
+- Rust server with WebSocket delivery, offline catch-up, rate limiting and automatic cleanup.
+- Docker Compose deployment with automatic TLS (Caddy and Let's Encrypt).
+- Encrypted attachment storage.
+
+**Calls**
+
+- One-on-one audio and video calls through LiveKit, end-to-end encrypted with SFrame (RFC 9605).
+- Calls through restrictive networks via TURN over TLS on port 443.
+
+**Messaging experience**
+
+- Replies, reactions, editing, deleting for everyone, pinned messages, forwarding and multi-select.
+- Text formatting, including spoilers; large emoji; link and phone number detection.
+- Delivery and read receipts and typing indicators (both can be turned off).
+- Folders, archive, pinned and muted chats, drafts, swipe actions and on-device search.
+- Disappearing messages, from 5 minutes to 4 weeks.
+
+**Privacy and comfort**
+
+- App lock with Face ID, Touch ID or passcode, and a cover in the app switcher.
+- A single, honest privacy screen.
+- Themes (System, Light, Dark, Black OLED), six accent colours and chat wallpapers.
+- English and Russian.
+- Accessibility work: VoiceOver labels, large text, WCAG AA contrast, Reduce Motion.
+- Sounds and haptics.
+
+## In progress
+
+- **Photos, video, files and voice messages.** Implemented and tested in code, including albums, a gallery, voice messages with hands-free recording, and optional link previews. Still to do: verification on real devices, and video improvements such as a preview frame, compression and recording video from the camera.
+- **Calls across networks on a real server.** The setup for getting calls through NAT and firewalls is in place, but a full acceptance test on a deployed server with devices on different networks is still pending.
+- **Several devices per account.** Linking a new device by scanning a QR code is in progress. Today one 24-word key equals one device.
+- **Sealed sender.** Hiding who sent a message from the server is partially done. The full version adds an extra encrypted envelope based on HPKE (RFC 9180).
+- **Push notifications and incoming calls when the app is closed.** The server side is ready. The app side needs an Apple developer certificate, which has not been set up yet.
+
+## Next
+
+- **Group calls.** The interface and much of the server signalling already exist. One-on-one calls come first, then group calls.
+- **First releases** on [GitHub Releases](https://github.com/Grossmanban/sinhron-website/releases).
+- **Security audit preparation,** followed by an independent audit.
+- **Reproducible builds,** so anyone can check that a published app matches the source code.
+- **Code signing and distribution:** App Store, Google Play, F-Droid and desktop packages.
+- **Builds for more platforms.** Development currently focuses on iPhone; the Flutter codebase targets Android, macOS, Windows and Linux too.
+
+## Not planned for 1.0
+
+Some things are deliberately left out of the first version:
+
+- **A web client.** Browsers make secure key storage and supply-chain safety much harder. It remains an open question for later.
+- **Federation.** Each Sinhron server is its own island. Servers do not talk to each other, and there are no bridges to other networks.
+- **Post-quantum encryption.** Planned once the MLS library we use supports it, without breaking existing chats.
+- **Encrypted backup of message history.** Version 1.0 backs up your chat membership, not your messages.
+- **Cloud AI features** such as translation or summaries. They conflict with keeping your data private.
+- **Call recording.**
+- **Server-side search.** This will never be built: search always runs on your device.

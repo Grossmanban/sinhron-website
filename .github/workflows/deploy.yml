@@ -1,0 +1,59 @@
+# Builds the static site and publishes it to the gh-pages branch, which GitHub Pages serves.
+# Pages settings: Source "Deploy from a branch" → gh-pages / (root).
+# Custom domain: set the repository variable CUSTOM_DOMAIN (e.g. sinhron.app) — the site is then
+# built for the domain root and a CNAME file is published.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+          REPO: ${{ github.event.repository.name }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          owner="${OWNER,,}"
+          if [ -n "$CUSTOM_DOMAIN" ]; then
+            export NEXT_PUBLIC_BASE_PATH="" NEXT_PUBLIC_SITE_URL="https://$CUSTOM_DOMAIN"
+          elif [ "${REPO,,}" = "$owner.github.io" ]; then
+            export NEXT_PUBLIC_BASE_PATH="" NEXT_PUBLIC_SITE_URL="https://$owner.github.io"
+          else
+            export NEXT_PUBLIC_BASE_PATH="/$REPO" NEXT_PUBLIC_SITE_URL="https://$owner.github.io/$REPO"
+          fi
+          echo "basePath='$NEXT_PUBLIC_BASE_PATH' url=$NEXT_PUBLIC_SITE_URL"
+          npm run build
+          if [ -n "$CUSTOM_DOMAIN" ]; then echo "$CUSTOM_DOMAIN" > out/CNAME; fi
+      - name: Publish to gh-pages
+        if: github.event_name != 'pull_request'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          force_orphan: true
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          commit_message: Deploy ${{ github.sha }}

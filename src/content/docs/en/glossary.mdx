@@ -1,0 +1,67 @@
+Sinhron uses a handful of technical terms. Here they are in plain language, roughly in the order you are likely to meet them.
+
+## Terms
+
+### End-to-end encryption (E2EE)
+
+Encryption where a message is locked on the sender's device and can only be unlocked on the recipients' devices. Servers and networks in between only ever see scrambled data. In Sinhron, end-to-end encryption is always on.
+
+### MLS
+
+Messaging Layer Security, an open IETF standard for end-to-end encrypted group messaging, published as [RFC 9420](https://www.rfc-editor.org/rfc/rfc9420). Sinhron uses it for every chat, including one-on-one chats, through the OpenMLS library.
+
+### Group and epoch
+
+In MLS, every chat is a *group*: the set of devices that share its keys. Each time the group's keys change, for example when someone joins or leaves or keys are refreshed, the group moves to a new *epoch*. Messages from one epoch cannot be read with another epoch's keys.
+
+### KeyPackage
+
+A small bundle of public key material that a device publishes on the server in advance. It lets others add you to a chat even while you are offline, without a back-and-forth exchange.
+
+### Forward secrecy
+
+A property that keeps past messages safe even if a key is stolen later. Because keys keep changing, today's key cannot unlock yesterday's messages.
+
+### Post-compromise security
+
+The mirror image of forward secrecy: if a device's keys were compromised, the group recovers once keys are refreshed, and the attacker is locked out of future messages.
+
+### SFrame
+
+Secure Frame, a standard for end-to-end encrypting audio and video frames in calls, published as [RFC 9605](https://www.rfc-editor.org/rfc/rfc9605). Sinhron derives SFrame keys from the chat's MLS keys, so only chat members can see or hear a call.
+
+### SFU
+
+Selective Forwarding Unit: a media server that receives each participant's audio and video and forwards it to the others without mixing it. With SFrame on top, an SFU forwards encrypted frames it cannot decrypt.
+
+### LiveKit
+
+The open-source SFU that Sinhron uses for calls. It runs on the same server as Sinhron and only ever handles encrypted media.
+
+### TURN/STUN (coturn)
+
+Helpers for connecting calls across home routers, firewalls and mobile networks. STUN helps a device find its public address; TURN relays traffic when a direct path is not possible. Sinhron uses coturn, an open-source TURN/STUN server, which can also relay over port 443 for networks that only allow HTTPS.
+
+### Sealed sender
+
+A technique that hides who sent a message from the server, which then only knows who should receive it. In Sinhron, sealed sender is partly implemented today; the full version with an extra encrypted envelope (HPKE, [RFC 9180](https://www.rfc-editor.org/rfc/rfc9180)) is on the roadmap.
+
+### BIP-39 and the 24-word key
+
+BIP-39 is a widely used standard for turning a random secret into a list of words that people can write down. Sinhron generates 24 words for your account. All of your keys are derived from them, and they are the only way to restore your account.
+
+### Safety number
+
+A 60-digit number (12 groups of 5) computed from your key and your contact's key. It is the same on both phones. Comparing it, in person or by scanning a QR code, proves that nobody is intercepting your conversation.
+
+### SQLCipher
+
+An encrypted version of SQLite, the database that many apps use to store data on the device. Sinhron uses it so that your chats are encrypted on your device as well as in transit.
+
+### Self-hosting
+
+Running a service on a server you or someone you trust controls, rather than relying on a company's central servers. Sinhron is designed to be self-hosted with Docker Compose.
+
+### Metadata
+
+Information *about* communication rather than its content: who talks to whom, when, how often and how much. End-to-end encryption hides content, but a server still sees some metadata. Sinhron works to minimise it and documents what remains in [Security](/docs/security).

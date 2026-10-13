@@ -1,0 +1,291 @@
+Sinhron is designed to run on a server you control. This guide takes you from a fresh virtual machine to a working Sinhron server with encrypted messaging and calls. It assumes you are comfortable with SSH, a Linux firewall, Docker Compose and DNS records.
+
+<Callout type="warning" title="Early beta">
+
+The server works and is covered by tests, but Sinhron is in early beta and has not been independently audited. Calls across different networks on a real deployed server have not been fully tested yet. Run it for yourself, your family or a small team, and keep backups.
+
+</Callout>
+
+## What you'll need
+
+| Resource | Minimum | Recommended | Typical cost |
+|---|---|---|---|
+| Virtual machine | 2 vCPU, 2 GB RAM, 20 GB SSD, Ubuntu 22.04 or newer | 4 vCPU, 8 GB RAM, 50 GB SSD | €5–30 per month (Hetzner), $15–120 per month (AWS, DigitalOcean) |
+| Domain name | Any domain | Whatever you like | $10–30 per year |
+| Apple Developer account | Optional, for push | Needed for production iOS push | $99 per year |
+| Apple push key (.p8) | Optional | Needed for production push | Included with the developer account |
+
+You will also need:
+
+- Basic Linux skills: `ssh`, `ufw`, `systemd`.
+- Basic Docker and Docker Compose.
+- Access to your domain's DNS settings.
+- Basic hygiene: SSH key login, `fail2ban`, a non-root user with `sudo`.
+
+A server on a VPS with its public IP directly on the network interface is the simplest option for calls (more on that below).
+
+## Preparing the server
+
+Log in, update the system, create a user and open only the ports Sinhron needs:
+
+```bash
+ssh root@your.vm.ip
+
+apt update && apt upgrade -y
+adduser sinhron
+usermod -aG sudo sinhron
+
+ufw allow 22/tcp            # SSH
+ufw allow 80/tcp            # HTTP (Let's Encrypt + redirect to HTTPS)
+ufw allow 443/tcp           # HTTPS (API, LiveKit) + TURN over TLS
+ufw allow 3478              # calls: coturn STUN/TURN, tcp + udp
+ufw allow 49152:49999/udp   # coturn relay range
+ufw allow 7881/tcp          # LiveKit ICE/TCP fallback
+ufw allow 7882/udp          # LiveKit media (single UDP port)
+ufw enable
+```
+
+<Callout type="note">
+
+Ports published by Docker (80, 443, 7881, 7882) bypass `ufw`, because Docker writes its own firewall rules. coturn runs on the host network, so `ufw` does apply to it. If your provider has an external firewall or security group, open the same list there too.
+
+</Callout>
+
+Then disable root and password logins in `/etc/ssh/sshd_config` (`PermitRootLogin no`, `PasswordAuthentication no`), reload SSH, and install Docker:
+
+```bash
+systemctl reload ssh
+curl -fsSL https://get.docker.com | sh
+usermod -aG docker sinhron
+exit
+
+ssh sinhron@your.vm.ip
+docker --version          # 25.x or newer
+docker compose version    # 2.x or newer
+```
+
+### DNS
+
+Sinhron uses three host names, all pointing at your server's IP:
+
+```text
+A  sinhron.example.com          →  your-vm-ip   # API + WebSocket  (SINHRON_PUBLIC_HOSTNAME)
+A  livekit.sinhron.example.com  →  your-vm-ip   # calls            (SINHRON_LIVEKIT_HOSTNAME)
+A  turn.sinhron.example.com     →  your-vm-ip   # TURN over TLS    (SINHRON_TURN_HOSTNAME)
+```
+
+Wait a few minutes, then check each name, for example `dig turn.sinhron.example.com +short`.
+
+Write down the public IP: it becomes `TURN_EXTERNAL_IP`. If the IP is not on the VM's network interface (for example with 1:1 NAT on some clouds, where `ip -4 addr` does not show it), use the form `public/private`.
+
+## Installation
+
+Clone the repository:
+
+```bash
+mkdir -p ~/sinhron && cd ~/sinhron
+git clone https://github.com/grossmanban/sinhron.git .
+```
+
+Everything the server needs lives in `server/`: `Dockerfile`, `docker-compose.yml`, `Caddyfile` and `Dockerfile.caddy`, `livekit.yaml`, `turnserver.conf`, the database migrations, and `.env.example`.
+
+Create your configuration from the template and make it readable only by you:
+
+```bash
+cd ~/sinhron/server
+cp .env.example .env
+chmod 600 .env
+nano .env
+```
+
+The key settings, with placeholders to replace:
+
+```ini
+#-- Postgres (inside the Docker network, not exposed) --
+POSTGRES_USER=sinhron
+POSTGRES_PASSWORD=GENERATE_A_RANDOM_64_CHAR_STRING_HERE
+POSTGRES_DB=sinhron
+SINHRON_DB_URL=postgres://sinhron:GENERATE_A_RANDOM_64_CHAR_STRING_HERE@postgres:5432/sinhron
+
+#-- Server --
+SINHRON_LISTEN=0.0.0.0:8080
+SINHRON_MESSAGE_RETENTION_DAYS=14
+RUST_LOG=info,sinhron_server=info,sqlx=warn
+
+#-- Host names --
+SINHRON_PUBLIC_HOSTNAME=sinhron.example.com
+SINHRON_LIVEKIT_HOSTNAME=livekit.sinhron.example.com
+SINHRON_TURN_HOSTNAME=turn.sinhron.example.com
+
+#-- Calls --
+LIVEKIT_KEYS=GENERATE_KEY: GENERATE_RANDOM_BASE64_SECRET_HERE
+TURN_SHARED_SECRET=GENERATE_RANDOM_HEX_64_HERE
+TURN_REALM=sinhron
+TURN_EXTERNAL_IP=your-vm-ip
+TURN_URLS=turn:sinhron.example.com:3478?transport=udp,turn:sinhron.example.com:3478?transport=tcp,turns:turn.sinhron.example.com:443?transport=tcp
+#TURN_TTL_SECS=86400
+
+#-- Optional: Apple push (needs an Apple Developer account) --
+#APNS_KEY_P8_PATH=/secrets/AuthKey_XYZ123.p8
+#APNS_KEY_ID=XYZ123
+#APNS_TEAM_ID=ABCDEFG123
+#APNS_BUNDLE_ID=com.sinhron.sinhron
+#APNS_USE_SANDBOX=false
+```
+
+Generate secrets like this:
+
+```bash
+openssl rand -hex 32                                          # passwords, TURN_SHARED_SECRET
+echo "$(openssl rand -hex 16): $(openssl rand -base64 32)"    # LIVEKIT_KEYS
+```
+
+Messages are kept on the server, encrypted, for `SINHRON_MESSAGE_RETENTION_DAYS` (14 by default) so that devices that were offline can catch up. `.env.example` also lists connection pool and rate-limit settings (`SINHRON_PG_*`, `SINHRON_RATE_*`); at the moment `docker-compose.yml` does not pass these to the container, so the server uses its built-in defaults.
+
+Now build and start everything:
+
+```bash
+cd ~/sinhron/server
+alias dc='docker compose -f docker-compose.yml'
+
+dc pull postgres livekit coturn
+dc build sinhron-server caddy    # 3–5 minutes the first time
+dc up -d
+dc ps                            # 5 containers: postgres, sinhron-server, caddy, livekit, coturn
+```
+
+<Callout type="warning" title="Always use -f docker-compose.yml in production">
+
+Next to `docker-compose.yml` there is a `docker-compose.override.yml` for local development. It exposes internal ports, **turns off Caddy** and changes how coturn is networked. A plain `docker compose up` picks it up automatically. In production, always run `docker compose -f docker-compose.yml ...`.
+
+</Callout>
+
+The compose file also takes care of a few safety details: Postgres listens only on `127.0.0.1`, the server's port 8080 is reachable only through Caddy, and compose refuses to start without `TURN_EXTERNAL_IP`.
+
+## TLS and domain
+
+Sinhron uses **Caddy** as its front door. Caddy gets and renews TLS certificates from **Let's Encrypt** automatically for all three host names; you do not need to manage certificates yourself. The `Caddyfile` in the repository is used as is.
+
+Caddy is built from `server/Dockerfile.caddy` with the `caddy-l4` module, which lets one port do two jobs. Connections to TCP 443 are routed by host name:
+
+- **The TURN name** goes to coturn, with Caddy handling TLS. This lets calls work on networks that only allow HTTPS.
+- **Everything else** goes to Caddy's normal web side: the API name serves `/v1/*` and the health checks, and the LiveKit name serves call signalling over secure WebSockets.
+
+Port 80 redirects to HTTPS and is used for Let's Encrypt validation. To receive certificate expiry notices, add `email you@example.com` to the global block of the Caddyfile.
+
+If you want maximum protection against a compromised public certificate authority, you can run your own CA and pin it into the client app at build time. No server changes are needed for that.
+
+## Calls: LiveKit and coturn
+
+Calls use two extra services, both started by the same compose file:
+
+- **LiveKit** is the media server. It forwards encrypted audio and video between participants. Its signalling is reachable only through Caddy at `wss://` on your LiveKit host name; media uses `7881/tcp` and `7882/udp`.
+- **coturn** is a TURN/STUN relay that helps calls get through NAT and firewalls. It runs on the host network with relay ports 49152–49999/udp, and is also reachable as TURN over TLS on port 443.
+
+The Sinhron server issues short-lived LiveKit tickets and TURN credentials to app users. A LiveKit ticket is only issued to members of the chat. TURN logins do not contain user identities, so coturn's logs do not reveal who is calling. Credentials last `TURN_TTL_SECS` (24 hours by default), which is also the maximum length of a call.
+
+Check that TURN over TLS works:
+
+```bash
+openssl s_client -connect turn.sinhron.example.com:443 -servername turn.sinhron.example.com </dev/null 2>/dev/null | openssl x509 -noout -subject
+```
+
+You should see `subject=CN=turn.sinhron.example.com`.
+
+Check that TURN can allocate a relay over UDP and TCP:
+
+```bash
+U="$(( $(date +%s) + 600 )):check"
+P=$(printf '%s' "$U" | openssl dgst -sha1 -hmac "$TURN_SHARED_SECRET" -binary | base64)
+docker exec sinhron-coturn turnutils_uclient -u "$U" -w "$P" -y your-vm-ip       # UDP
+docker exec sinhron-coturn turnutils_uclient -t -u "$U" -w "$P" -y your-vm-ip    # TCP
+```
+
+Before you rely on calls, make a **real test call** between two physical devices on different networks, for example a phone on mobile data and another on Wi-Fi, then repeat with one of them on a network where only port 443 is open.
+
+<Callout type="note">
+
+LiveKit and coturn do not need an Apple Developer account. Apple's certificate is only needed to show incoming calls on a locked or closed iPhone. Without it, calls work while the app is open.
+
+</Callout>
+
+## Health checks
+
+Sinhron exposes two health endpoints:
+
+```bash
+curl https://sinhron.example.com/_healthz          # 200 when the server is running
+curl https://sinhron.example.com/_readyz           # 200 when ready, 503 if Postgres is unreachable
+curl https://livekit.sinhron.example.com/          # 200 "OK" from LiveKit through Caddy
+```
+
+Use them with any uptime monitor, such as a hosted service or your own Prometheus and Alertmanager.
+
+To watch the logs:
+
+```bash
+docker compose -f docker-compose.yml logs -f sinhron-server
+docker compose -f docker-compose.yml logs -f caddy
+```
+
+## Backups
+
+The server never holds anything it can decrypt, so backups contain only encrypted data. You need three things:
+
+1. **The Postgres database:** accounts, groups, encrypted messages, encrypted user backups and attachment metadata.
+2. **The media volume** `sinhron_media`: encrypted attachment files. Back it up at the same time as the database, because the two refer to each other.
+3. **Your `.env` file,** encrypted.
+
+A daily schedule with `crontab -e` might look like this:
+
+```text
+0 3 * * * cd ~/sinhron/server && docker compose -f docker-compose.yml exec -T postgres pg_dump -U sinhron sinhron | gzip > ~/backups/sinhron-$(date +\%F).sql.gz
+15 3 * * * docker run --rm -v server_sinhron_media:/m:ro -v ~/backups:/b alpine tar czf /b/sinhron-media-$(date +\%F).tgz -C /m .
+```
+
+Encrypt `.env` and keep the copy off the server:
+
+```bash
+gpg --symmetric --cipher-algo AES256 .env
+```
+
+To restore on a new machine, start only Postgres, load the dump, then start the server. It applies migrations on top of the restored data automatically:
+
+```bash
+docker compose -f docker-compose.yml up -d postgres
+docker compose -f docker-compose.yml exec postgres psql -U sinhron -d sinhron -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+gunzip -c restore.sql.gz | docker compose -f docker-compose.yml exec -T postgres psql -U sinhron sinhron
+docker compose -f docker-compose.yml up -d sinhron-server
+```
+
+Active connections and invitations that were still waiting for offline users are not part of the backup. Apps reconnect on their own.
+
+## Updating
+
+```bash
+cd ~/sinhron/server
+git pull
+docker compose -f docker-compose.yml build sinhron-server
+docker compose -f docker-compose.yml up -d sinhron-server
+```
+
+Database migrations run automatically when the server starts. Postgres and Caddy keep running, and apps reconnect by themselves after a short pause.
+
+## Inviting people
+
+Once your server is up, inviting people is simple:
+
+1. Ask them to install the Sinhron app.
+2. On the **Pick a server** screen, they enter your address, for example `sinhron.example.com`.
+3. They create a profile and write down their own 24-word key.
+4. To start chatting, you scan each other's QR code, or one of you pastes the other's key in **New chat**.
+
+<Callout type="note" title="Registration is open">
+
+The app has a field for an invite token, but the server does not require one yet. Anyone who knows your server's address can create an account. Registration is rate-limited, but invite-only registration is not available yet. Keep that in mind before sharing the address widely.
+
+</Callout>
+
+Before going live, run through this checklist: SSH with keys only, firewall enabled, a long database password, `.env` with `chmod 600`, daily backups stored off the server, a Caddy email for certificate notices, `fail2ban` and automatic OS updates, and an uptime monitor.
+
+For what the server can and cannot see about your users, read [Security](/docs/security) and [Threat model](/docs/threat-model).

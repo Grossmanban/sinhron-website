@@ -1,0 +1,80 @@
+Sinhron is a private messenger you can run on your own server. This page explains what it is, how to get the app, and what happens the first time you open it, including the one thing you must not skip: writing down your 24-word key.
+
+<Callout type="warning" title="Early beta">
+
+Sinhron is in early beta. There are no App Store or Google Play builds yet, no public releases yet, and the code has not had an independent security audit. Please treat it as a preview, not as a replacement for the messenger you rely on today.
+
+</Callout>
+
+## What is Sinhron
+
+Sinhron is a messenger for chats, groups, voice and video calls, photos, files and voice messages. Everything you send is end-to-end encrypted: it is locked on your phone and can only be unlocked on the phones of the people you are talking to.
+
+The second idea is self-hosting. Sinhron does not run one big central service. Instead, a server is run by someone you trust: you, your family, your company or a friend. The server passes encrypted messages along, but it cannot read them.
+
+In the app's own words: "Premium chat. Private by default."
+
+## What makes it different
+
+- **No email, no phone, no password.** You do not sign up with a phone number or an email address. Your account is a cryptographic key that lives on your device, and a 24-word key lets you restore it.
+- **Encryption is always on.** There is no unencrypted mode, not for convenience and not for admins. Every chat, group and call is end-to-end encrypted from the very first message.
+- **A server you choose.** Sinhron runs on a server you trust. Your data lives there and nowhere else: not with us, not with anyone. Setting one up takes a few Docker commands.
+- **Built on open standards.** Messages use MLS, the IETF standard for group encryption (RFC 9420). Calls use SFrame (RFC 9605). We did not invent our own cryptography.
+- **No telemetry.** The app does not send analytics or usage data to the developers. Ever.
+- **Made to feel good.** Smooth animations, careful typography, haptics, dark mode, accessibility. Privacy should not feel like a compromise.
+
+## Installing the app
+
+When builds are ready, they will be published on GitHub Releases:
+
+[github.com/Grossmanban/sinhron-website/releases](https://github.com/Grossmanban/sinhron-website/releases)
+
+Sinhron is built with Flutter, so one codebase can target iOS, Android, macOS, Windows and Linux. Right now development and testing focus on iPhone. Builds for the other platforms are planned and will appear on the releases page as they become ready.
+
+<Callout type="note">
+
+There are no published builds yet. If you are comfortable building from source, the code is at [github.com/grossmanban/sinhron](https://github.com/grossmanban/sinhron). Store versions (App Store, Google Play) will come later and require code signing, which is part of the roadmap.
+
+</Callout>
+
+## First launch
+
+The first launch takes a couple of minutes. Here is what to expect.
+
+1. **Welcome.** Three short screens explain the basics: encrypted by default, no email or phone number, and the server you trust.
+2. **Pick a server.** Enter the address of your Sinhron server, for example `your-server.com`. If you got an invite link, it fills in the details for you. Sinhron works with any server you trust: your team's, a friend's, or your own. The server never sees what you send.
+3. **Create your profile.** Choose the name people will see. Your name is shared inside your encrypted chats, not stored as plain text on the server.
+4. **Write down your 24-word key.** The app shows 24 words. Write them on paper, in order.
+5. **Quick check.** To make sure the words really are on paper, the app asks you for three of them by number, each with four options. If you pick the wrong one, it tells you which word to look at again, and you can go back to the list.
+6. **Setting up.** The app creates your keys and connects to the server. You are ready to chat.
+
+To start a conversation, open **New chat** and either scan your contact's QR code or paste their key (64 characters). There is no phone book to search, because there are no phone numbers.
+
+## Your 24-word key
+
+Your 24 words are your account. They are generated on your phone using the BIP-39 standard, and all of your keys are derived from them.
+
+**It is the only way to restore your account.** If you lose your phone or reinstall the app, choose "Restore with your key" and type the 24 words. Sinhron recovers your identity and your membership in your chats and groups from an encrypted backup that only your key can open.
+
+Please keep in mind:
+
+- **Store it offline.** Paper in a safe place is best. Do not keep it in a screenshot, a notes app, an email draft or a chat.
+- **Nobody can recover it for you.** The words never leave your device and are never sent to the server. We cannot reset them, and neither can your server's admin.
+- **A lost key means a lost account.** Without the 24 words, the encrypted backup cannot be opened by anyone. You would need to create a new account.
+- **Anyone with the words can become you.** Treat them like the keys to your home.
+
+<Callout type="tip" title="What a restore brings back">
+
+Restoring with your key brings back your identity and your chats and groups. It does not bring back your old message history: that is stored only on your devices, encrypted, and is not uploaded anywhere.
+
+</Callout>
+
+If the app copies the words to your clipboard, it clears the clipboard automatically after 60 seconds.
+
+## What's next
+
+- [Features](/docs/features): everything you can do in Sinhron, from reactions to disappearing messages.
+- [Security](/docs/security): how encryption works and what the server can and cannot see.
+- [Threat model](/docs/threat-model): what Sinhron protects against, and what it does not.
+- [Self-hosting](/docs/self-hosting): run your own Sinhron server.
+- [FAQ](/docs/faq): short answers to common questions.

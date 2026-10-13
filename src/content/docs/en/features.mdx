@@ -1,0 +1,110 @@
+Sinhron aims to feel like a premium messenger while keeping everything end-to-end encrypted. This page walks through what you can do today. Where something is still in beta or not built yet, we say so.
+
+## Chats and groups
+
+You can have one-on-one chats and group chats. Every chat, including a one-on-one chat, is an encrypted MLS group under the hood, so the same protection applies everywhere.
+
+To start a chat, open **New chat** and scan your contact's QR code or paste their key. There are no phone numbers and no public directory, so people can only reach you if you share your code or key with them.
+
+The chat list is built for everyday use:
+
+- **Pin** important chats to the top and reorder them.
+- **Mute** chats you want to keep quiet.
+- **Mark as read or unread**, with an unread dot and counters.
+- **Drafts** are saved per chat and shown in red in the list.
+- **Peek** at a chat by pressing and holding it: you see the latest messages over a blurred background, with quick actions underneath.
+- A **typing** indicator shows in the chat header and in the list.
+
+## Messages
+
+Press and hold any message to open a menu inspired by iMessage. The message lifts above the blurred chat, with a row of reactions on top and actions below: Reply, Copy, Forward, Pin, Edit, Select and Delete.
+
+- **Reply.** Swipe a message to the side, or choose Reply. The quote appears in your message; tap it to jump back to the original.
+- **Reactions.** Double-tap a text message to send a heart, or pick any reaction from the menu. Tap a reaction chip to add or remove yours.
+- **Edit.** Fix a typo in your own message. Edited messages are labelled "edited".
+- **Delete.** Delete a message just for you, or for everyone (your own messages only). A deleted message really is erased: its text, any media keys, the quote and reactions.
+- **Pin.** Pin a message to a bar under the chat header. Tap to jump to it.
+- **Select and forward.** Select several messages to copy, delete or forward them. Forwarded photos and files are re-encrypted under a new key, so the server cannot link the two chats.
+- **Status ticks.** Sending, sent, delivered and read.
+
+**Formatting** works with simple markers: `*bold*`, `_italic_`, `` `monospace` ``, `~strikethrough~`, and `||spoiler||` (hidden until tapped). Links and phone numbers are detected, and a message with one to three emoji is shown large.
+
+**Search** looks through chat names and message text. It runs entirely on your device, inside your encrypted local database. The server never sees what you search for.
+
+## Photos, video, files and voice
+
+<Callout type="note" title="In beta">
+
+Media features are implemented and covered by tests, but have not yet been verified end to end on a real device. Expect rough edges.
+
+</Callout>
+
+Every attachment is encrypted on your phone with a fresh key before it is uploaded. The server stores only scrambled bytes; the key travels inside your encrypted message.
+
+- **Photos.** Send from the camera or your library, up to 10 at once, with a caption. Several photos arrive together as an album. Before sending, each photo is re-encoded on your device, which strips location (GPS) and other hidden metadata.
+- **Gallery.** Tap a photo to open it full screen. Swipe through every photo in the chat, pinch or double-tap to zoom, swipe down to close. You can share a photo or save it to your library.
+- **Video.** Send videos from your library. Playback happens from memory, so the decrypted video is never written to disk.
+- **Files.** Send documents of any type. Open or share them with other apps; the temporary copy is deleted as soon as you are done.
+- **Voice messages.** Hold the microphone to record, slide left to cancel, or slide up to lock and keep recording hands-free. Play back at 1×, 1.5× or 2×; consecutive voice messages play one after another.
+- **Link previews.** Off by default. If you turn them on, the preview is built by your phone when you send; the people you send it to never contact the website. See [Security](/docs/security).
+
+The chat's **Media** screen collects all photos, files, voice messages and links in one place.
+
+## Calls
+
+Sinhron supports one-on-one **audio and video calls**. Calls are end-to-end encrypted with SFrame (RFC 9605), using keys derived from your chat's MLS encryption. The call server forwards the media but cannot see or hear it. Calls can get through restrictive networks that only allow ordinary HTTPS traffic.
+
+Current limitations:
+
+- **Group calls are not available yet.** Only one-on-one calls.
+- **Incoming calls only ring while the app is open.** Ringing on a locked or closed phone requires Apple's push service, which needs an Apple developer certificate that is not set up yet.
+- **Calls across different networks on a real deployed server have not been fully tested yet.**
+
+## Disappearing messages
+
+You can make messages in a chat disappear after a set time. Press and hold the chat's name at the top and choose **Off, 5 minutes, 1 hour, 1 day, 1 week or 4 weeks**.
+
+Both people see a note when the timer changes, the header shows the current timer, and disappearing messages carry a small timer icon. When the time is up, the message is deleted from both phones completely: the text, photos, video, voice messages and documents, along with their encryption keys.
+
+A few things to know:
+
+- The timer starts when a message is sent (for you) or when it arrives on the other phone, not when it is read.
+- The server cannot tell disappearing messages from normal ones.
+- Disappearing messages protect against leaks later on. They cannot stop the other person from taking a screenshot.
+
+## Folders and archive
+
+Organise your chats into **folders**. Built-in folders are All, Personal, Groups and Unread. You can also create your own: include all personal chats, all groups, or specific chats, and hide muted or read chats.
+
+- **Swipe** left and right to move between folders. Each folder tab shows an unread count.
+- **Press and hold** a folder tab to edit, reorder, mark all as read, or delete it.
+- **Archive** chats you want out of the way. Archived chats live in their own screen, reachable from the top of All, and do not appear in any folder.
+- **Swipe actions** on a chat row: mute or unmute, archive or unarchive, and delete (always with a confirmation).
+
+## App lock and privacy
+
+- **App lock.** Require Face ID, Touch ID or your device passcode to open Sinhron. Choose when it locks: immediately, or after 1, 5 or 60 minutes in the background.
+- **Hide in app switcher.** When Sinhron is in the background, a blurred cover with the logo hides your chats from the app switcher. On by default.
+- **Read receipts** and **typing indicators** can be turned off. Like in Signal, they are mutual: if you turn them off, you neither send nor see them.
+- **Online status** is never shown.
+- **Link previews** are off unless you turn them on.
+
+All of these live on one **Privacy** screen, and every switch on it does exactly what it says.
+
+## Verifying contacts
+
+To be sure you are talking to the right person, and that nobody is in the middle, compare **safety numbers**. Each chat has a 60-digit number (12 groups of 5 digits) computed from both of your keys. It is the same on both phones.
+
+Compare it in person or over a channel you trust, or scan each other's QR code. Then tap **Mark as verified**, and a checkmark appears next to their name. If your contact's key ever changes, Sinhron shows "Safety number changed" and removes the checkmark, so you can verify again.
+
+## Appearance and accessibility
+
+- **Themes:** System, Light, Dark and Black (OLED).
+- **Six accent colours**, adjusted in dark mode for contrast.
+- **Chat wallpapers:** soft gradients, subtle patterns, or your own photo (kept only on your device).
+- **Languages:** English and Russian. Sinhron follows your phone's language, or you can choose one in Settings → Appearance → Language.
+- **VoiceOver:** buttons, tabs, chat rows and messages have spoken labels, and message actions are available from VoiceOver.
+- **Larger text:** key screens are tested with Dynamic Type at 1.5× and 2× size.
+- **Contrast:** text and accent colours meet WCAG AA contrast in light and dark themes.
+- **Reduce Motion** is respected: slides become cross-fades and springy effects are turned off.
+- **Sounds and haptics:** quiet send and receive sounds and subtle vibrations, each with its own switch.

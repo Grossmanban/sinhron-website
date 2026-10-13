@@ -1,0 +1,523 @@
+@import "tailwindcss";
+
+/* Theme follows the system unless the visitor picks one: <html data-theme="light|dark">. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ── Design tokens — mirrored from design_handoff_sinhron/README.md (the app's own palette) ── */
+:root {
+  --sn-bg: #faf9f6;
+  --sn-bg-soft: #f1efea;
+  --sn-surface: #fefcf8;
+  --sn-elevated: #ffffff;
+  --sn-divider: rgba(15, 23, 32, 0.06);
+  --sn-divider-strong: rgba(15, 23, 32, 0.1);
+  --sn-text: #0e141b;
+  --sn-text-2: #4a5562;
+  --sn-text-3: #636c76; /* app tokens.dart: AA 4.6:1 on bg / bgSoft / surface */
+  --sn-accent: #2864de; /* app tokens.dart: AA as text and under white text */
+  --sn-accent-strong: #1f56c9;
+  --sn-accent-soft: #e6effe;
+  --sn-success: #167a4d;
+  /* Filled blue under white text — AA in every theme (white on #4F8AFF would be 3.3:1). */
+  --sn-button: #2864de;
+  --sn-button-hover: #1f56c9;
+  --sn-glass: rgba(250, 249, 246, 0.72);
+  --sn-card: #ffffff;
+  --sn-shadow-soft: 0 1px 2px rgba(15, 23, 32, 0.04), 0 8px 24px rgba(15, 23, 32, 0.06);
+  --sn-shadow-lift: 0 2px 6px rgba(15, 23, 32, 0.05), 0 24px 60px -12px rgba(15, 23, 32, 0.14);
+  color-scheme: light;
+}
+
+
+:root[data-theme="dark"] {
+  --sn-bg: #0b1016;
+  --sn-bg-soft: #0f151d;
+  --sn-surface: #141b25;
+  --sn-elevated: #1a222d;
+  --sn-divider: rgba(255, 255, 255, 0.06);
+  --sn-divider-strong: rgba(255, 255, 255, 0.1);
+  --sn-text: #eceef1;
+  --sn-text-2: #a6afbd;
+  --sn-text-3: #8691a2;
+  --sn-accent: #4f8aff;
+  --sn-accent-strong: #6b9dff;
+  --sn-accent-soft: rgba(79, 138, 255, 0.16);
+  --sn-success: #2bc58a;
+  --sn-glass: rgba(11, 16, 22, 0.66);
+  --sn-card: #121922;
+  --sn-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --sn-shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.3), 0 30px 70px -20px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+/* No-JS fallback: follow the system theme. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sn-bg: #0b1016;
+    --sn-bg-soft: #0f151d;
+    --sn-surface: #141b25;
+    --sn-elevated: #1a222d;
+    --sn-divider: rgba(255, 255, 255, 0.06);
+    --sn-divider-strong: rgba(255, 255, 255, 0.1);
+    --sn-text: #eceef1;
+    --sn-text-2: #a6afbd;
+    --sn-text-3: #8691a2;
+    --sn-accent: #4f8aff;
+    --sn-accent-strong: #6b9dff;
+    --sn-accent-soft: rgba(79, 138, 255, 0.16);
+    --sn-success: #2bc58a;
+    --sn-glass: rgba(11, 16, 22, 0.66);
+    --sn-card: #121922;
+    --sn-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --sn-shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.3), 0 30px 70px -20px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+
+
+/* Fixed-dark surfaces (hero, calls, final CTA) regardless of the page theme. */
+.sn-dark {
+  --sn-bg: #05080c;
+  --sn-bg-soft: #0f151d;
+  --sn-surface: #141b25;
+  --sn-elevated: #1a222d;
+  --sn-divider: rgba(255, 255, 255, 0.07);
+  --sn-divider-strong: rgba(255, 255, 255, 0.12);
+  --sn-text: #f2f4f7;
+  --sn-text-2: #a6afbd;
+  --sn-text-3: #8691a2;
+  --sn-accent: #4f8aff;
+  --sn-accent-strong: #6b9dff;
+  --sn-accent-soft: rgba(79, 138, 255, 0.16);
+  --sn-success: #2bc58a;
+  --sn-card: #10161e;
+  color-scheme: dark;
+  background: var(--sn-bg);
+  color: var(--sn-text);
+}
+
+@theme inline {
+  --color-bg: var(--sn-bg);
+  --color-bg-soft: var(--sn-bg-soft);
+  --color-surface: var(--sn-surface);
+  --color-elevated: var(--sn-elevated);
+  --color-card: var(--sn-card);
+  --color-divider: var(--sn-divider);
+  --color-divider-strong: var(--sn-divider-strong);
+  --color-text: var(--sn-text);
+  --color-text-2: var(--sn-text-2);
+  --color-text-3: var(--sn-text-3);
+  --color-accent: var(--sn-accent);
+  --color-accent-strong: var(--sn-accent-strong);
+  --color-accent-soft: var(--sn-accent-soft);
+  --color-button: var(--sn-button);
+  --color-button-hover: var(--sn-button-hover);
+  --color-success: var(--sn-success);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --radius-card: 22px;
+  --radius-bubble: 18px;
+  --shadow-soft: var(--sn-shadow-soft);
+  --shadow-lift: var(--sn-shadow-lift);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Base ── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: 80px;
+  background: var(--sn-bg);
+}
+body {
+  background: var(--sn-bg);
+  color: var(--sn-text);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01" on, "cv11" on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+  min-height: 100dvh;
+}
+::selection {
+  background: color-mix(in srgb, var(--sn-accent) 28%, transparent);
+}
+:focus-visible {
+  outline: 2px solid var(--sn-accent);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+img,
+svg,
+video {
+  max-width: 100%;
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ── Typography helpers — fluid with clamp() ── */
+.t-mega {
+  font-size: clamp(2.75rem, 1.2rem + 6.4vw, 7.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  font-weight: 650;
+  text-wrap: balance;
+}
+.t-display {
+  font-size: clamp(2.25rem, 1.25rem + 4.2vw, 5.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 650;
+  text-wrap: balance;
+}
+.t-title {
+  font-size: clamp(1.625rem, 1.1rem + 1.8vw, 2.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  font-weight: 620;
+  text-wrap: balance;
+}
+.t-lead {
+  font-size: clamp(1.125rem, 0.98rem + 0.6vw, 1.5rem);
+  line-height: 1.42;
+  letter-spacing: -0.012em;
+  color: var(--sn-text-2);
+  text-wrap: pretty;
+}
+.t-eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sn-accent);
+}
+.text-gradient {
+  background: linear-gradient(100deg, var(--sn-text) 15%, var(--sn-accent) 55%, #9db8ff 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.sn-dark .text-gradient {
+  background: linear-gradient(100deg, #ffffff 10%, #a9c3ff 50%, #4f8aff 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* Section rhythm */
+.section {
+  padding-block: clamp(5rem, 3rem + 9vw, 11rem);
+}
+.container-x {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: max(20px, env(safe-area-inset-left), env(safe-area-inset-right));
+}
+@media (min-width: 768px) {
+  .container-x {
+    padding-inline: max(40px, env(safe-area-inset-left));
+  }
+}
+
+/* Glass */
+.glass {
+  background: var(--sn-glass);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Bento spotlight: a soft highlight that follows the pointer (set via --mx/--my). */
+.spotlight {
+  position: relative;
+  isolation: isolate;
+}
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out-expo);
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--sn-accent) 14%, transparent),
+    transparent 60%
+  );
+  z-index: -1;
+}
+@media (hover: hover) and (pointer: fine) {
+  .spotlight:hover::after {
+    opacity: 1;
+  }
+}
+
+/* Horizontal snap carousel for phones */
+.snap-row {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.snap-row::-webkit-scrollbar {
+  display: none;
+}
+.snap-row > * {
+  scroll-snap-align: center;
+}
+
+/* Docs prose */
+.prose-sn {
+  color: var(--sn-text-2);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+.prose-sn > * + * {
+  margin-top: 1.1em;
+}
+.prose-sn h2 {
+  color: var(--sn-text);
+  font-size: clamp(1.5rem, 1.2rem + 0.9vw, 1.875rem);
+  font-weight: 620;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin-top: 2.4em;
+  scroll-margin-top: 96px;
+}
+.prose-sn h3 {
+  color: var(--sn-text);
+  font-size: 1.2rem;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  margin-top: 1.8em;
+  scroll-margin-top: 96px;
+}
+.prose-sn h2 + *,
+.prose-sn h3 + * {
+  margin-top: 0.6em;
+}
+.prose-sn strong {
+  color: var(--sn-text);
+  font-weight: 620;
+}
+.prose-sn a {
+  color: var(--sn-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--sn-accent) 35%, transparent);
+  text-underline-offset: 3px;
+}
+.prose-sn a:hover {
+  text-decoration-color: var(--sn-accent);
+}
+.prose-sn ul,
+.prose-sn ol {
+  padding-left: 1.3em;
+}
+.prose-sn ul {
+  list-style: disc;
+}
+.prose-sn ol {
+  list-style: decimal;
+}
+.prose-sn li + li {
+  margin-top: 0.4em;
+}
+.prose-sn li::marker {
+  color: var(--sn-text-3);
+}
+.prose-sn :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--sn-bg-soft);
+  border: 1px solid var(--sn-divider);
+  border-radius: 6px;
+  padding: 0.1em 0.38em;
+  color: var(--sn-text);
+  overflow-wrap: anywhere;
+}
+.prose-sn table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  display: block;
+  overflow-x: auto;
+}
+.prose-sn th,
+.prose-sn td {
+  text-align: left;
+  padding: 0.65em 0.9em;
+  border-bottom: 1px solid var(--sn-divider-strong);
+  vertical-align: top;
+}
+.prose-sn th {
+  color: var(--sn-text);
+  font-weight: 620;
+}
+.prose-sn hr {
+  border-color: var(--sn-divider-strong);
+  margin-block: 2.5em;
+}
+.prose-sn blockquote {
+  border-left: 3px solid var(--sn-accent);
+  padding-left: 1em;
+  color: var(--sn-text-2);
+}
+.prose-sn figure[data-rehype-pretty-code-figure] {
+  margin-block: 1.4em;
+}
+.prose-sn pre {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  border-radius: 16px;
+  padding: 1.1em 1.25em;
+  overflow-x: auto;
+  background: #0d131b !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #adbac7;
+}
+.prose-sn pre code {
+  display: grid;
+}
+:root:not([data-theme="dark"]) .prose-sn pre {
+  background: #0f1620 !important;
+}
+
+/* Reduced motion: no smooth scroll, no infinite ambience. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0) scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate3d(-50%, -2%, 0) scale(1.08);
+    opacity: 1;
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* ── In-phone app palette (app tokens, scaled in container units) ── */
+.app-dark {
+  --a-bg: #0b1016;
+  --a-soft: #0f151d;
+  --a-surface: #1a222d;
+  --a-text: #eceef1;
+  --a-text-2: #a6afbd;
+  --a-text-3: #6e7889;
+  --a-divider: rgba(255, 255, 255, 0.07);
+  --a-accent: #4f8aff;
+  background: var(--a-bg);
+  color: var(--a-text);
+}
+.app-light {
+  --a-bg: #faf9f6;
+  --a-soft: #f1efea;
+  --a-surface: #ffffff;
+  --a-text: #0e141b;
+  --a-text-2: #4a5562;
+  --a-text-3: #8a96a4;
+  --a-divider: rgba(15, 23, 32, 0.07);
+  --a-accent: #2d6ff7;
+  background: var(--a-bg);
+  color: var(--a-text);
+}
+.app-screen {
+  font-feature-settings: "ss01" on, "cv11" on;
+  letter-spacing: -0.01em;
+}
+
+/* Server-sees scene: the packet rides along its container by --p (0..1), transform-only. */
+.packet {
+  transform: translateX(calc(var(--p, 0) * (100cqw - 100%)));
+  will-change: transform;
+}
+
+/* Above-the-fold entrance: pure CSS so it plays on first paint, before any JS hydrates
+   (keeps LCP fast). Stagger with style={{ "--d": "120ms" }}. */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--enter-y, 24px), 0);
+    filter: blur(var(--enter-blur, 8px));
+  }
+}
+.enter {
+  animation: enter 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.enter-word {
+  --enter-y: 0.35em;
+  --enter-blur: 12px;
+  display: inline-block;
+  white-space: pre;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 120px, 0);
+  }
+}
+.enter-rise {
+  animation: rise 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+/* Movement only — the element is visible from the first frame (used for LCP-sized text). */
+@keyframes enter-soft {
+  from {
+    transform: translate3d(0, 18px, 0);
+  }
+}
+.enter-soft {
+  animation: enter-soft 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}

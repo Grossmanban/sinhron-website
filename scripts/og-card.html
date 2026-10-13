@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Open Graph card. Rendered to public/og-{en,ru}.png by scripts/make-og.cjs (needs Playwright). -->
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Geist;src:url(../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2) format("woff2");font-weight:100 900}
+*{margin:0;box-sizing:border-box}
+body{width:1200px;height:630px;background:#05080c;color:#f2f4f7;font-family:Geist;font-feature-settings:"ss01","cv11";overflow:hidden;position:relative}
+.glow{position:absolute;left:640px;top:-260px;width:900px;height:900px;border-radius:50%;background:radial-gradient(closest-side,rgba(79,138,255,.45),rgba(79,138,255,.1) 55%,transparent 75%)}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse 70% 70% at 70% 30%,#000,transparent 75%)}
+.wrap{position:absolute;left:84px;top:84px;right:84px;bottom:76px;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:16px;font-size:34px;font-weight:600;letter-spacing:-.03em}
+h1{margin-top:auto;font-size:96px;line-height:.98;letter-spacing:-.045em;font-weight:650}
+h1 span{background:linear-gradient(100deg,#fff 10%,#a9c3ff 50%,#4f8aff 90%);-webkit-background-clip:text;color:transparent}
+p{margin-top:26px;font-size:28px;color:#a6afbd;letter-spacing:-.01em}
+.pill{position:absolute;right:84px;top:88px;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:10px 20px;font-size:20px;color:#a6afbd}
+</style></head><body>
+<div class="glow"></div><div class="grid"></div>
+<div class="pill" id="pill"></div>
+<div class="wrap">
+  <div class="brand"><svg width="52" height="52" viewBox="0 0 56 56" fill="none"><circle cx="22" cy="28" r="14" stroke="#4F8AFF" stroke-width="3"/><circle cx="34" cy="28" r="14" fill="#4F8AFF"/><path d="M22 14a14 14 0 010 28" stroke="#05080c" stroke-width="3" stroke-linecap="round"/></svg>Sinhron</div>
+  <h1 id="t"></h1><p id="s"></p>
+</div>
+<script>
+const ru = location.search === "?ru";
+document.getElementById("t").innerHTML = ru ? "Ваши разговоры.<br><span>Только ваши.</span>" : "Your conversations.<br><span>Only yours.</span>";
+document.getElementById("s").textContent = ru ? "Сквозное шифрование на вашем сервере. Без номера телефона." : "End-to-end encrypted, on your own server. No phone number.";
+document.getElementById("pill").textContent = ru ? "Открытый код · MLS" : "Open source · MLS";
+</script></body></html>

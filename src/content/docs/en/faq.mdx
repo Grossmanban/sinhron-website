@@ -1,0 +1,56 @@
+Short answers to the questions people ask most often. If yours is not here, feel free to open an issue on [GitHub](https://github.com/Grossmanban/sinhron-website/issues).
+
+## How is Sinhron different from Signal and Telegram?
+
+**Compared with Telegram:** in Telegram, regular chats and groups are encrypted between you and Telegram's servers, but not end to end, so the service can technically read them. End-to-end encryption is only available in one-on-one secret chats. In Sinhron, everything is end-to-end encrypted, always: every chat, every group, every call. There is no other mode.
+
+**Compared with Signal:** Signal is an excellent, well-audited end-to-end encrypted messenger. The main differences are where it runs and how you sign up. Signal runs on servers operated by the Signal Foundation and asks for a phone number. Sinhron runs on a server you or someone you trust operates, and asks for no phone number, email or password: your account is a 24-word key. Sinhron also uses MLS (RFC 9420), the newer IETF standard for group encryption.
+
+The trade-off: Signal and Telegram are mature, widely used and, in Signal's case, independently audited. Sinhron is in early beta and has not been audited yet.
+
+## Do I need my own server?
+
+No. You need access to *a* Sinhron server, which can be run by you, your family, your company or a friend you trust. If someone you know already runs one, you just enter its address when you first open the app.
+
+If you would like to run your own, see [Self-hosting](/docs/self-hosting). A small virtual machine and a domain name are enough.
+
+## Why a server if you can't trust it?
+
+Phones are often offline, behind firewalls, or asleep. Something has to hold messages until the recipient comes back online, help devices find each other, and relay calls. That is the server's job.
+
+Sinhron is designed so that the server can do this job **without being able to read anything**. It only ever handles encrypted data. Even someone with full access to the server and its database cannot read your messages, see your photos or listen to your calls. They can still see some metadata, such as who talks to whom and when. That is one more reason to choose a server operator you trust. Details are in [Security](/docs/security).
+
+## What if I lose my 24-word key?
+
+As long as you still have your phone, nothing changes: Sinhron keeps working. But if you then lose or reset your phone, **your account cannot be recovered**. The 24 words are the only way to open your encrypted backup, and they are never sent to the server. Nobody can reset them: not us, and not your server's operator.
+
+In that case you would need to create a new account and reconnect with your contacts. This is why the app asks you to write the words on paper and checks three of them before you finish setting up.
+
+## Is there a web version?
+
+No. A web client is not planned for version 1.0. Browsers make it much harder to store keys securely and to guarantee that the code you run has not been tampered with. Sinhron is a native app for phones and computers.
+
+## Can I use it on several devices?
+
+Not yet. Today one account works on one device. Linking additional devices by scanning a QR code is in progress. In Sinhron's design, each device gets its own keys, rather than sharing one private key between devices.
+
+## How many people can a server handle?
+
+Sinhron is designed for up to about **10,000 active users per server**. A small virtual machine is plenty for a family or a small team. Groups are designed for up to 100 members at first.
+
+## Is it free?
+
+Sinhron is open source, and there is no paid Sinhron service. The only cost is running a server: a small virtual machine and a domain name, if you host your own. The license has not been finalised yet.
+
+## Has it been audited?
+
+Not yet. Sinhron uses open, well-studied standards (MLS, SFrame, BIP-39) and established open-source libraries, and the project keeps an internal [threat model](/docs/threat-model). But no independent security audit has been done. An audit is planned before a public release. Until then, please do not rely on Sinhron for situations where your safety depends on it.
+
+## How can I help?
+
+Thank you for asking. A few ways:
+
+- **Try it and report problems.** Open an issue on [GitHub](https://github.com/Grossmanban/sinhron-website/issues) with steps to reproduce.
+- **Review the code,** especially the cryptography and the server. Security reports are very welcome; see [Reporting a vulnerability](/docs/threat-model).
+- **Run a test server** and tell us how the [Self-hosting](/docs/self-hosting) guide worked for you.
+- **Improve the documentation** if something here is unclear.

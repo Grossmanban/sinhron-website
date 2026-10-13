@@ -1,0 +1,276 @@
+Sinhron работает на сервере, которому доверяете вы. Это руководство проведёт от пустой виртуальной машины до работающего сервера с сообщениями и звонками. Оно рассчитано на человека, который уверенно чувствует себя в Linux и Docker: например, если вы хотите поднять Sinhron для себя, семьи или небольшой команды.
+
+<Callout type="warning" title="Ранняя бета">
+
+Серверная часть работает и покрыта тестами, но проект в ранней бете. Звонки через NAT на развёрнутом сервере ещё не прошли приёмку на реальных устройствах. Делайте резервные копии и не рассчитывайте пока на Sinhron как на единственный канал связи.
+
+</Callout>
+
+## Что понадобится
+
+| Ресурс | Минимум | Рекомендуем | Примерная стоимость |
+|---|---|---|---|
+| Виртуальная машина | 2 vCPU, 2 ГБ RAM, 20 ГБ SSD, Ubuntu 22.04+ | 4 vCPU, 8 ГБ RAM, 50 ГБ SSD | €5–30 в месяц у Hetzner, $15–120 в месяц у AWS или DigitalOcean |
+| Доменное имя | любое | какое нравится | $10–30 в год |
+| Apple Developer Account | не нужен | нужен для push-уведомлений на iOS | $99 в год |
+| Ключ APNs (.p8) | не нужен | нужен для push-уведомлений | входит в Apple Developer |
+
+Из навыков пригодятся: базовый Linux (ssh, ufw, systemd), Docker и Docker Compose, умение завести DNS-записи. Предполагается, что домен у вас уже есть, а вход по SSH настроен по ключу.
+
+Для звонков нужен **публичный IP прямо на сетевом интерфейсе** машины. Если провайдер выдаёт адрес через 1:1 NAT (так бывает у AWS Elastic IP и некоторых облаков), звонки тоже можно настроить, но надёжнее обычный VPS.
+
+## Подготовка сервера
+
+Обновите систему, заведите отдельного пользователя и откройте нужные порты:
+
+```bash
+ssh root@your.vm.ip
+
+apt update && apt upgrade -y
+adduser sinhron
+usermod -aG sudo sinhron
+
+ufw allow 22/tcp            # SSH
+ufw allow 80/tcp            # HTTP: выпуск сертификатов Let's Encrypt и редирект
+ufw allow 443/tcp           # HTTPS: API, сигналинг LiveKit и TURN поверх TLS
+ufw allow 3478              # звонки: coturn STUN/TURN, tcp и udp
+ufw allow 49152:49999/udp   # диапазон relay-портов coturn
+ufw allow 7881/tcp          # LiveKit: запасной ICE поверх TCP
+ufw allow 7882/udp          # LiveKit: медиа
+ufw enable
+```
+
+<Callout type="note">
+
+Порты, которые публикует Docker (80, 443, 7881, 7882), обходят ufw: Docker пишет собственные правила iptables. coturn работает в сети хоста, и его ufw видит. Если у провайдера есть внешний firewall (security group), откройте там тот же список портов.
+
+</Callout>
+
+Затем запретите вход под root и по паролю (`PermitRootLogin no` и `PasswordAuthentication no` в `/etc/ssh/sshd_config`), установите Docker и войдите под новым пользователем:
+
+```bash
+systemctl reload ssh
+curl -fsSL https://get.docker.com | sh
+usermod -aG docker sinhron
+exit
+
+ssh sinhron@your.vm.ip
+docker --version          # 25.x или новее
+docker compose version    # 2.x или новее
+```
+
+### DNS
+
+Sinhron использует три имени, и все указывают на IP вашей машины:
+
+```text
+A  sinhron.example.com          →  <your-vm-ip>   # API и WebSocket
+A  livekit.sinhron.example.com  →  <your-vm-ip>   # звонки
+A  turn.sinhron.example.com     →  <your-vm-ip>   # TURN поверх TLS
+```
+
+Подождите несколько минут и проверьте каждое имя, например `dig turn.sinhron.example.com +short`. Запишите публичный IP — он понадобится как `TURN_EXTERNAL_IP`.
+
+## Установка
+
+Склонируйте репозиторий и создайте файл с настройками:
+
+```bash
+mkdir -p ~/sinhron && cd ~/sinhron
+git clone https://github.com/grossmanban/sinhron.git .
+
+cd server
+cp .env.example .env
+chmod 600 .env
+nano .env
+```
+
+Ключевые переменные `.env` (значения ниже — заглушки, замените их своими). Первая группа — Postgres: он живёт внутри сети Docker и наружу не открыт. Дальше — имена из раздела DNS и настройки звонков:
+
+```ini
+POSTGRES_USER=sinhron
+POSTGRES_PASSWORD=GENERATE_A_RANDOM_PASSWORD
+POSTGRES_DB=sinhron
+SINHRON_DB_URL=postgres://sinhron:GENERATE_A_RANDOM_PASSWORD@postgres:5432/sinhron
+
+SINHRON_LISTEN=0.0.0.0:8080
+SINHRON_MESSAGE_RETENTION_DAYS=14
+RUST_LOG=info,sinhron_server=info,sqlx=warn
+
+SINHRON_PUBLIC_HOSTNAME=sinhron.example.com
+SINHRON_LIVEKIT_HOSTNAME=livekit.sinhron.example.com
+SINHRON_TURN_HOSTNAME=turn.sinhron.example.com
+
+LIVEKIT_KEYS=GENERATED_KEY: GENERATED_SECRET
+TURN_SHARED_SECRET=GENERATE_RANDOM_HEX
+TURN_REALM=sinhron
+TURN_EXTERNAL_IP=203.0.113.10
+TURN_URLS=turn:sinhron.example.com:3478?transport=udp,turn:sinhron.example.com:3478?transport=tcp,turns:turn.sinhron.example.com:443?transport=tcp
+```
+
+Секреты генерируются так:
+
+```bash
+openssl rand -hex 32                                         # пароль Postgres, TURN_SHARED_SECRET
+echo "$(openssl rand -hex 16): $(openssl rand -base64 32)"   # строка для LIVEKIT_KEYS
+```
+
+Несколько важных деталей:
+
+- `TURN_EXTERNAL_IP` — публичный IP машины. Если адрес выдан через 1:1 NAT, укажите его в виде `публичный/приватный`. Без этой переменной compose откажется стартовать.
+- `TURN_TTL_SECS` — срок жизни временных данных TURN, по умолчанию 86400 секунд (сутки); он же ограничивает максимальную длину звонка.
+- `LIVEKIT_URL` задавать не нужно: compose сам сообщит клиентам адрес `wss://` на имени `SINHRON_LIVEKIT_HOSTNAME`.
+- Порядок в `TURN_URLS` — порядок попыток подключения: сначала UDP, потом TCP, затем TLS на 443 для сетей, где открыт только HTTPS.
+- Сейчас compose передаёт серверу не все переменные из шаблона: настройки пула Postgres (`SINHRON_PG_*`), лимиты (`SINHRON_RATE_*`) и `SINHRON_RETENTION_SWEEP_SECS` до контейнера не доходят, и сервер работает со значениями по умолчанию.
+- Спецификация проекта рекомендует хранить секреты в продакшене через Docker secrets или sops; файл `.env` с правами 600 — минимально допустимый вариант.
+
+Теперь соберите и запустите сервисы:
+
+```bash
+alias dc='docker compose -f docker-compose.yml'
+
+dc pull postgres livekit coturn
+dc build sinhron-server caddy   # первый раз — 3–5 минут
+dc up -d
+dc ps                           # должно быть 5 контейнеров
+```
+
+<Callout type="warning" title="Только с -f docker-compose.yml">
+
+В продакшене всегда запускайте compose с явным `-f docker-compose.yml`. Рядом лежит `docker-compose.override.yml` для локальной разработки: он открывает служебные порты, **выключает Caddy** и переводит coturn в другую сеть. Голый `docker compose up -d` подхватит его автоматически.
+
+</Callout>
+
+## TLS и домен
+
+Перед всеми сервисами стоит **Caddy** — он сам получает и продлевает сертификаты Let's Encrypt для всех трёх имён (через порт 80) и перенаправляет HTTP на HTTPS. Конфигурация лежит в `server/Caddyfile`, копировать её никуда не нужно.
+
+Образ Caddy собирается из `server/Dockerfile.caddy`: это Caddy 2.11.7 с модулем `caddy-l4`, которого нет в стандартном образе. Он нужен, чтобы делить TCP-порт 443 по имени сервера:
+
+- `SINHRON_TURN_HOSTNAME` → Caddy снимает TLS и передаёт трафик TURN в coturn. Так звонки проходят даже в сетях, где открыт только HTTPS.
+- Всё остальное → HTTP-часть Caddy, которая видит реальный IP клиента:
+  - `SINHRON_PUBLIC_HOSTNAME` → API сервера (`/v1/*`) и проверки `/_healthz`, `/_readyz`; остальное — 404;
+  - `SINHRON_LIVEKIT_HOSTNAME` → сигналинг LiveKit по `wss://`.
+
+Чтобы получать письма о проблемах с сертификатами, добавьте свою почту в глобальный блок Caddyfile: `email you@example.com`.
+
+## Звонки: LiveKit и coturn
+
+Звонкам нужны два сервиса, оба уже описаны в `docker-compose.yml`:
+
+- **LiveKit** — медиасервер (SFU), который пересылает зашифрованные кадры между участниками. Сигналинг идёт через Caddy, медиа — через `7882/udp` и запасной `7881/tcp`.
+- **coturn** — TURN/STUN-сервер, который помогает устройствам за NAT найти друг друга. Работает в сети хоста, relay-порты — `49152–49999/udp`.
+
+Сервер Sinhron выдаёт пропуск в комнату звонка (JWT для LiveKit) только участникам чата, а временные данные для TURN — со сроком жизни до суток. Без переменных `LIVEKIT_KEYS`, `TURN_SHARED_SECRET` и `TURN_URLS` эндпоинты звонков отвечают 503.
+
+Проверьте TURN поверх TLS на 443:
+
+```bash
+openssl s_client -connect turn.sinhron.example.com:443 -servername turn.sinhron.example.com </dev/null 2>/dev/null | openssl x509 -noout -subject
+```
+
+Команда должна вывести `subject=CN=turn.sinhron.example.com`.
+
+И выделение relay-адреса по UDP и TCP:
+
+```bash
+U="$(( $(date +%s) + 600 )):check"
+P=$(printf '%s' "$U" | openssl dgst -sha1 -hmac "$TURN_SHARED_SECRET" -binary | base64)
+docker exec sinhron-coturn turnutils_uclient -u "$U" -w "$P" -y <your-vm-ip>      # UDP
+docker exec sinhron-coturn turnutils_uclient -t -u "$U" -w "$P" -y <your-vm-ip>   # TCP
+```
+
+Снаружи можно проверить через [Trickle ICE](https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/): укажите `turns:turn.sinhron.example.com:443?transport=tcp` и данные из примера выше — должен появиться кандидат типа `relay`.
+
+<Callout type="tip" title="Приёмка перед «продакшеном»">
+
+Обязательно сделайте реальный звонок между двумя физическими устройствами в **разных** сетях: телефон на мобильном интернете ↔ устройство на Wi-Fi. Затем повторите, когда одно из них в сети, где закрыто всё, кроме порта 443.
+
+</Callout>
+
+Apple Developer Account для самих звонков не нужен. Он нужен только для того, чтобы входящий звонок приходил при закрытом приложении; без него звонки работают, пока приложение открыто.
+
+## Проверка работы
+
+```bash
+curl https://sinhron.example.com/_healthz      # → 200
+curl https://sinhron.example.com/_readyz       # → 200 (503, если Postgres недоступен)
+curl https://livekit.sinhron.example.com/      # → 200 "OK"
+```
+
+Логи смотрите так:
+
+```bash
+docker compose -f docker-compose.yml logs -f sinhron-server
+docker compose -f docker-compose.yml logs -f caddy
+```
+
+Полезные строки в логах сервера: `ws session authenticated` — клиент подключился, `message persisted` — сообщение сохранено, `rate-limited registration` — кто-то слишком часто регистрируется (если такое повторяется, стоит разобраться).
+
+### Чек-лист безопасности
+
+- Вход по SSH только по ключу, пароли отключены, включён `fail2ban`.
+- `ufw` включён, открыты только нужные порты.
+- Порты 5432 (Postgres) и 8080 (сервер) наружу не открыты — только через Caddy.
+- Пароль Postgres длинный и случайный, `.env` с правами 600 и не попадает в git.
+- Обновления ОС ставятся автоматически (`unattended-upgrades`).
+- Настроен мониторинг доступности и есть запасной SSH-ключ администратора.
+- Docker compose запускается не от root.
+
+## Резервные копии
+
+Сервер хранит только шифротекст, но без резервной копии пользователи потеряют недоставленные сообщения, зашифрованные копии состояния групп и файлы. Бэкап состоит из трёх частей: база Postgres, том с файлами `sinhron_media` и файл `.env`.
+
+Откройте `crontab -e` и добавьте две строки: ежедневный дамп Postgres и архив тома с файлами (это шифротекст) — в тот же день, что и дамп:
+
+```text
+0 3 * * * cd ~/sinhron/server && docker compose -f docker-compose.yml exec -T postgres pg_dump -U sinhron sinhron | gzip > ~/backups/sinhron-$(date +\%F).sql.gz
+15 3 * * * docker run --rm -v server_sinhron_media:/m:ro -v ~/backups:/b alpine tar czf /b/sinhron-media-$(date +\%F).tgz -C /m .
+```
+
+Файл `.env` сохраняйте только в зашифрованном виде:
+
+```bash
+gpg --symmetric --cipher-algo AES256 .env
+```
+
+Храните копии вне этой машины: на другом сервере или зашифрованном носителе. Дамп и файлы нужны вместе — записи в базе ссылаются на файлы в томе.
+
+Восстановление на новой машине:
+
+```bash
+docker compose -f docker-compose.yml up -d postgres
+docker compose -f docker-compose.yml exec postgres psql -U sinhron -d sinhron -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+gunzip -c restore.sql.gz | docker compose -f docker-compose.yml exec -T postgres psql -U sinhron sinhron
+docker compose -f docker-compose.yml up -d sinhron-server
+```
+
+Не попадают в бэкап активные подключения (клиенты просто переподключатся) и недоставленные приглашения в группы — их отправят заново.
+
+## Обновление
+
+```bash
+cd ~/sinhron/server
+git pull
+docker compose -f docker-compose.yml build sinhron-server
+docker compose -f docker-compose.yml up -d sinhron-server
+```
+
+Миграции базы применяются автоматически при старте сервера. Postgres и Caddy при этом не перезапускаются, а клиенты сами переподключатся через несколько секунд.
+
+## Пригласите людей
+
+Сервер готов — осталось позвать собеседников:
+
+1. Расскажите им, где взять приложение (см. [Начало работы](/docs/getting-started)).
+2. Дайте адрес сервера, например `sinhron.example.com`. Его нужно ввести при первом запуске на экране «Выберите сервер».
+3. Попросите надёжно записать 24 слова — без них аккаунт не восстановить даже вам как владельцу сервера.
+4. Новый чат начинается по QR-коду или по ключу собеседника — строке из 64 символов. При первой встрече сверьте код безопасности.
+
+<Callout type="note" title="Регистрация пока открыта">
+
+В приложении есть поле для кода приглашения, но сервер коды пока не проверяет: зарегистрироваться может любой, кто знает адрес. Регистрации ограничены только лимитом частоты. Учитывайте это, если не хотите посторонних на своём сервере.
+
+</Callout>
+
+Спецификация рассчитана на сервер до 10 000 активных пользователей, но для семьи или небольшой команды хватит и минимальной конфигурации. Если пользователей становится больше сотни одновременно, увеличьте машину до 8 vCPU и 16 ГБ RAM.

@@ -1,0 +1,122 @@
+This page describes how Sinhron is put together: the app on your device, the services on the server, and the path a message or a call takes between them. It is written for curious users, self-hosters and contributors.
+
+## The big picture
+
+Sinhron has two halves. On your device, a Flutter interface sits on top of a Rust core that does all of the cryptography, storage and networking. On the server, Caddy terminates TLS and routes traffic to three services: the Sinhron server for messages, LiveKit for call media, and coturn for getting calls through firewalls.
+
+```text
+┌──────────────────────── Your device ────────────────────────┐
+│                                                             │
+│   Flutter UI  ◄────── flutter_rust_bridge ──────►  Rust Core │
+│   (screens, animations)            (MLS, SFrame, SQLCipher,  │
+│                                     networking)              │
+└──────────────────────────────┬──────────────────────────────┘
+                               │  WebSocket (wss) + HTTPS
+                               │  WebRTC media (SFrame-encrypted)
+                               ▼
+┌──────────────────────── Your server ────────────────────────┐
+│                                                             │
+│                 Caddy  (TLS, Let's Encrypt, port 443)        │
+│          ┌───────────────────┼────────────────────┐         │
+│          ▼                   ▼                    ▼         │
+│   sinhron-server         LiveKit               coturn       │
+│   (Rust, Axum)           (call media SFU)      (TURN/STUN)  │
+│      │       │                                              │
+│      ▼       ▼                                              │
+│  PostgreSQL  Blob storage                                   │
+│  (ciphertext, (encrypted attachments)                       │
+│   metadata)                                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Everything is started with Docker Compose on a single machine. A Sinhron server is its own island: there is no federation between servers.
+
+## The client: Flutter and Rust
+
+The app is split into two layers with a strict boundary between them.
+
+**Flutter** draws the interface. Sinhron uses its own design system rather than stock Material or Cupertino widgets, so one codebase can look and feel polished on iOS, Android, macOS, Windows and Linux. Flutter handles screens, navigation, animations and state, and nothing else.
+
+**The Rust core** does everything sensitive:
+
+- **Cryptography:** MLS group encryption (through OpenMLS), SFrame call keys, the 24-word BIP-39 key and the keys derived from it, attachment encryption.
+- **Storage:** a local database encrypted with SQLCipher.
+- **Networking:** the WebSocket connection, HTTPS requests and optional certificate pinning, all over rustls.
+- **Sync:** applying incoming messages in order, removing duplicates and catching up after being offline.
+
+The two layers talk through **flutter_rust_bridge**, which generates the bindings automatically. Private keys never cross into the Flutter side; only what the screen needs to show does. Decrypted photos and videos are kept in memory rather than written to disk.
+
+## The server
+
+The server is deliberately simple, and deliberately not trusted with secrets.
+
+- **sinhron-server** is written in Rust with Axum and Tokio. It registers accounts by public key (no passwords: devices prove who they are by signing a random challenge), stores KeyPackages, delivers encrypted messages over WebSockets, keeps each user's encrypted backup, stores encrypted attachments, relays call signalling, and issues call tickets and TURN credentials. It also applies rate limits and deletes old data on schedule.
+- **PostgreSQL 16** stores accounts, group membership needed for delivery, and encrypted messages. Messages are kept for 14 days by default so offline devices can catch up.
+- **Blob storage** is a Docker volume holding encrypted attachments, each named by the SHA-256 hash of its encrypted contents. Attachments are removed after 90 days without access.
+- **Caddy** handles TLS certificates automatically and routes port 443 by host name.
+- **LiveKit** forwards encrypted call media.
+- **coturn** relays call traffic when devices cannot reach each other directly.
+
+The server never sees plain text. For a full list of what it can and cannot observe, see [Security](/docs/security).
+
+## How a message travels
+
+Here is what happens when you send a message:
+
+1. **You tap Send.** The Flutter interface hands the text to the Rust core.
+2. **The core packs it.** The message is wrapped in a small typed envelope (so it can carry replies, reactions, edits, attachments or timers) and padded to a multiple of 512 bytes.
+3. **The core encrypts and signs it** as an MLS message for the chat's group, using the group's current keys.
+4. **The app sends it** over a secure WebSocket to the server, with a unique message ID.
+5. **The server stores the ciphertext** and confirms receipt. You see the first tick.
+6. **The server delivers it** to the devices of every chat member that is online. Devices that are offline receive it when they reconnect, as long as it is within the retention period.
+7. **If push is configured,** the recipient's phone gets a notification without any content, which wakes the app to fetch the message.
+8. **The recipient's core checks and decrypts it.** It verifies the sender's signature, decrypts the message, discards duplicates and stores it in the encrypted local database. Only then does it appear on screen.
+9. **Receipts flow back.** The recipient's app sends encrypted "delivered" and, if enabled, "read" receipts, which update your ticks.
+
+**Attachments** take a short detour. Before step 3, the core encrypts the file with a fresh random key (AES-256-GCM) and uploads the encrypted file over HTTPS. The key, the file's hash and its size travel inside the MLS message, so only chat members can download and decrypt the file.
+
+## How a call works
+
+1. **Ringing.** When you start a call, the invitation travels through the Sinhron server over the existing WebSocket. If nobody answers within 30 seconds, the call ends.
+2. **Tickets.** Each device asks the Sinhron server for a LiveKit ticket and temporary TURN credentials. Tickets are only given to members of the chat.
+3. **Keys.** Each device derives SFrame keys from the chat's MLS group, as RFC 9605 describes. The keys are created locally and never leave the device.
+4. **Connecting.** The devices connect to LiveKit through Caddy. Media flows over WebRTC, either directly to LiveKit or through coturn. Coturn can relay over UDP, TCP or TLS on port 443 for networks that block everything else.
+5. **Encrypting.** Every audio and video frame is encrypted with SFrame before it leaves the device. LiveKit forwards frames it cannot decrypt.
+6. **Rotating.** If the chat's MLS keys change during the call, the call keys change with them.
+7. **Recovering.** If the network drops, the app gives the connection 30 seconds to recover before ending the call.
+
+Today calls are one-on-one only. Group calls reuse the same design and are on the [roadmap](/docs/roadmap).
+
+## Standards
+
+Sinhron relies on published standards rather than custom cryptography:
+
+- **[RFC 9420](https://www.rfc-editor.org/rfc/rfc9420): The Messaging Layer Security (MLS) Protocol.** End-to-end encryption for one-on-one and group chats, with forward secrecy and post-compromise security.
+- **[RFC 9605](https://www.rfc-editor.org/rfc/rfc9605): Secure Frame (SFrame).** End-to-end encryption of audio and video frames in calls, with keys derived from MLS.
+- **[BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki): Mnemonic code for generating deterministic keys.** The 24-word key that your account is derived from.
+- **[RFC 9180](https://www.rfc-editor.org/rfc/rfc9180): Hybrid Public Key Encryption (HPKE).** Used inside MLS, and planned for the sealed sender envelope that will hide who sent a message.
+
+You can also browse these on the IETF [Datatracker](https://datatracker.ietf.org/).
+
+## Technology
+
+| Component | Technology | Version |
+|---|---|---|
+| User interface | Flutter, Dart | 3.41.5, 3.11.3 |
+| State management | Riverpod | 3.x |
+| Client core | Rust | 1.94.1 |
+| Rust ↔ Flutter bridge | flutter_rust_bridge | 2.11.1 |
+| Message encryption | OpenMLS (RFC 9420) | 0.8.1 |
+| Local database | SQLite with SQLCipher (via rusqlite) | rusqlite 0.32.1 |
+| TLS | rustls | 0.23.40 |
+| Async runtime | Tokio | 1.47.3 LTS |
+| Server framework | Axum | 0.8.9 |
+| Database driver | sqlx | 0.8.6 |
+| Server database | PostgreSQL | 16 |
+| Call media server | LiveKit | 1.11.0 |
+| Call client | livekit_client (Flutter) | 2.7.0 |
+| TURN/STUN | coturn | 4.6.3 |
+| Reverse proxy and TLS | Caddy with caddy-l4 | 2.11.7, 0.1.2 |
+| Deployment | Docker Compose | 2.x |
+
+Versions are pinned exactly in the project, and upgrades of security-critical libraries are done deliberately, one at a time.

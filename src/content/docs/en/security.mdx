@@ -1,0 +1,110 @@
+Sinhron is designed around one assumption: the server should not have to be trusted. This page explains, in plain language first, how your messages, calls and files are protected, and exactly what a server operator can and cannot see.
+
+<Callout type="warning" title="Not audited yet">
+
+Sinhron has not yet had an independent security audit. The design uses well-studied open standards, but the implementation is young. See [Threat model](/docs/threat-model) for known limitations.
+
+</Callout>
+
+## In short
+
+- Everything you send is **end-to-end encrypted** on your device. There is no way to turn it off.
+- The server stores and forwards **only encrypted data**. Even someone with full access to the server and its database cannot read your messages or see your photos.
+- The server still sees some **metadata**: who talks to whom, when, and roughly how much. We are honest about this below.
+- Your account is a key on your device, backed up by **24 words** that never leave your hands.
+- Your local data is **encrypted on the device**, and you can lock the app with Face ID or Touch ID.
+- Sinhron sends **no telemetry** to anyone.
+
+## Encryption is always on
+
+Sinhron has no plain-text mode, not "for convenience", not "for debugging", not "for admins". Every chat is encrypted from its very first message, including one-on-one chats, groups, calls, photos, files, voice messages, reactions, edits and read receipts.
+
+Features that cannot work without reading your data on the server, such as server-side search, simply do not exist on the server. Search runs on your device instead.
+
+## The MLS protocol
+
+Messages are encrypted with **MLS (Messaging Layer Security)**, an open IETF standard published as [RFC 9420](https://www.rfc-editor.org/rfc/rfc9420) in 2023. MLS was designed by cryptographers from across the industry specifically for secure group messaging. Sinhron uses OpenMLS, an open-source implementation written in Rust. We do not use home-made cryptography.
+
+What MLS gives you, in plain terms:
+
+- **Only members can read.** Every chat is an MLS group. Only the devices in the group hold the keys.
+- **Fresh keys over time.** The group regularly moves to new keys. Each step is called an epoch.
+- **Forward secrecy.** If a key is stolen today, older messages stay protected.
+- **Post-compromise security.** If a device was compromised, the group heals once keys are refreshed: the attacker is locked out of future messages.
+- **Changes in membership.** When someone is removed from a group, the keys change and they cannot read anything sent afterwards.
+- **Authenticated senders.** Every message is signed. The server cannot forge a message or pretend to be someone else, and nobody can edit or delete another person's messages.
+
+To make message lengths harder to guess, encrypted messages are padded to multiples of 512 bytes, so the server sees a size bucket, not the exact length.
+
+## What the server sees
+
+A Sinhron server has to route messages, so it inevitably learns some information about delivery. Here is the honest picture.
+
+| The server can see | The server cannot see |
+|---|---|
+| That an account (a public key) exists | Your 24-word key or any private key |
+| Which devices are in which chat, so it can deliver messages | The content of any message |
+| When messages are sent and delivered | Your name, chat names or group names |
+| Approximate message sizes (in 512-byte buckets) | Photos, videos, files and voice messages |
+| Approximate sizes of encrypted attachments, and when they are uploaded and downloaded | File names and file types |
+| Your IP address when you connect | Whether a message is text, a reaction, an edit or a receipt |
+| The size and update frequency of your encrypted backup | What is inside your backup |
+| That a call is taking place and who joined it | What is said or shown in a call |
+| | Which chats have disappearing messages |
+| | What you search for |
+
+<Callout type="note" title="Who sent what">
+
+Today the server can tell which device sent a message, because full sealed sender (hiding the sender from the server) is not built yet. It is on the [roadmap](/docs/roadmap).
+
+</Callout>
+
+If metadata matters a lot to you, the best protection is to run the server yourself, or to use one run by someone you trust. See [Self-hosting](/docs/self-hosting).
+
+## Calls and SFrame
+
+Calls go through **LiveKit**, an open-source media server that Sinhron runs alongside the main server. LiveKit is an SFU (selective forwarding unit): it forwards each participant's audio and video to the others without mixing them.
+
+On top of the normal connection encryption, every audio and video frame is encrypted end to end with **SFrame**, a standard published as [RFC 9605](https://www.rfc-editor.org/rfc/rfc9605). The SFrame keys are derived from the MLS keys of your chat, exactly as RFC 9605 describes. That means:
+
+- The keys are created only on the participants' devices and are never sent to any server.
+- LiveKit forwards encrypted frames it cannot decrypt.
+- When the chat's keys change, the call's keys change too.
+- Call keys live only in memory during the call. They are never written to disk or logged.
+
+Only members of the chat can get a ticket to join its call. A relay server (coturn) helps calls get through firewalls and NAT; it only ever sees encrypted traffic, and its logins do not reveal who is calling.
+
+LiveKit does see which accounts joined a call, when, and from which IP addresses, and it sees packet sizes and timing.
+
+## Data on your device
+
+Your chats are stored in a local database that is **fully encrypted with SQLCipher**, a widely used encrypted version of SQLite (AES-256). The encryption key is derived from your 24-word key.
+
+- **Decrypted photos and videos stay in memory.** They are not saved to disk. When the system requires a file, for example to share a document or record a voice message, Sinhron uses a short-lived temporary file and deletes it right away.
+- **Photos lose their metadata.** Before sending, each photo is re-encoded on your device, so location data and other hidden metadata never leave your phone.
+- **App lock.** You can require Face ID, Touch ID or your device passcode to open Sinhron, immediately or after a few minutes in the background.
+- **App switcher cover.** When Sinhron is in the background, a blurred cover hides your chats from the app switcher.
+
+## Backup and your 24-word key
+
+When you create an account, your phone generates a 24-word key using the BIP-39 standard. All of your account keys are derived from it.
+
+So that you can get back into your chats on a new phone, Sinhron keeps an **encrypted backup** of your encryption state (your membership in chats and groups) on your server. The backup is encrypted on your device with a key derived from your 24 words, using AES-256-GCM. The server stores it but cannot open it; it only sees its size, how often it changes, and a version counter.
+
+- The 24 words are shown once, are **never sent to the server** and are never logged.
+- The backup restores your identity and your chats and groups. It does **not** contain your message history.
+- **If you lose the 24 words, the backup cannot be opened by anyone,** including you, us, or the server's operator. This is a deliberate choice: it is better to lose access than to hand a recovery key to a server.
+
+## Notifications without content
+
+Push notifications travel through Apple's and Google's servers, so Sinhron never puts anything meaningful in them. A notification carries no message text, no sender and no chat identifier, only an unread count and a generic "New message". Your phone then fetches the encrypted message, decrypts it locally, and only then shows a preview.
+
+<Callout type="note">
+
+Push notifications are not enabled in current builds yet: they require an Apple developer account and will arrive with the App Store version. For now, messages arrive while the app is open.
+
+</Callout>
+
+## No telemetry
+
+Sinhron does not phone home. The app sends no analytics, no usage statistics and no crash reports to the developers or to anyone else. Your phone only talks to the server you chose. If something goes wrong, any logs stay on your device, and it is up to you whether to share them in a bug report.
