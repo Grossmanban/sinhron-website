@@ -1,0 +1,4 @@
+User-Agent: *
+Allow: /
+
+Sitemap: https://grossmanban.github.io/sinhron-website/sitemap.xml

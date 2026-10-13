@@ -1,0 +1,35 @@
+1:"$Sreact.fragment"
+2:I[22016,["/sinhron-website/_next/static/chunks/39ulqwuuup4kd.js","/sinhron-website/_next/static/chunks/17fqaj6l4vjz8.js","/sinhron-website/_next/static/chunks/0r0liwjozrh5b.js"],""]
+3:I[97367,["/sinhron-website/_next/static/chunks/0h2qsuyze9ds1.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+8:I[97367,["/sinhron-website/_next/static/chunks/0h2qsuyze9ds1.js"],"ViewportBoundary"]
+9:I[97367,["/sinhron-website/_next/static/chunks/0h2qsuyze9ds1.js"],"MetadataBoundary"]
+7:X
+1a:X
+1a:C
+0:{"buildId":"Zm7z1QnJEQtUpbSJEQR3e","data":[{"rsc":["$","$1","c",{"children":[["$","div",null,{"className":"container-x max-w-3xl pb-24 pt-[calc(7rem+env(safe-area-inset-top))] md:pt-36","children":[["$","div",null,{"className":"enter-soft","children":[["$","h1",null,{"className":"t-display","children":"Blog"}],["$","p",null,{"className":"t-lead mt-4","children":"News, releases and behind-the-scenes notes from the Sinhron project."}]]}],["$","ul",null,{"className":"mt-14 divide-y divide-divider border-y border-divider","children":[["$","li","october-13-update",{"children":["$","$L2",null,{"href":"/en/blog/october-13-update/","className":"group block py-8","children":[["$","time",null,{"dateTime":"2026-10-13","className":"text-[13px] text-text-3","children":"October 13, 2026"}],["$","h2",null,{"className":"mt-2 text-[24px] font-semibold tracking-[-0.025em] text-text group-hover:text-accent","children":"Mentions, profile photos and screen recording"}],["$","p",null,{"className":"mt-2 text-[16px] text-text-2","children":"What a day of work added and fixed, and what still waits for an iPhone."}],["$","span",null,{"className":"mt-4 inline-flex items-center gap-1 text-[15px] font-medium text-accent","children":["Read",["$","svg",null,{"width":16,"height":16,"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":1.8,"strokeLinecap":"round","strokeLinejoin":"round","aria-hidden":true,"className":"transition-transform group-hover:translate-x-0.5","children":["$","path",null,{"d":"M5 12h14M13 6l6 6-6 6"}]}]]}]]}]}],["$","li","hello-sinhron",{"children":["$","$L2",null,{"href":"/en/blog/hello-sinhron/","className":"group block py-8","children":[["$","time",null,{"dateTime":"2026-10-13","className":"text-[13px] text-text-3","children":"October 13, 2026"}],["$","h2",null,{"className":"mt-2 text-[24px] font-semibold tracking-[-0.025em] text-text group-hover:text-accent","children":"Hello, Sinhron"}],["$","p",null,{"className":"mt-2 text-[16px] text-text-2","children":"Why we’re building another messenger, what already works and what doesn’t yet."}],["$","span",null,{"className":"mt-4 inline-flex items-center gap-1 text-[15px] font-medium text-accent","children":["Read",["$","svg",null,{"width":16,"height":16,"viewBox":"0 0 24 24","fill":"none","stroke":"currentColor","strokeWidth":1.8,"strokeLinecap":"round","strokeLinejoin":"round","aria-hidden":true,"className":"transition-transform group-hover:translate-x-0.5","children":"$0:data:0:rsc:props:children:0:props:children:1:props:children:0:props:children:props:children:3:props:children:1:props:children"}]]}]]}]}]]}]]}],null,["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":"$@6","staleTime":"$7","varyParams":null},{"rsc":["$","$1","h",{"children":[null,["$","$L8",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, viewport-fit=cover"}],["$","meta","2",{"name":"theme-color","content":"#FAF9F6","media":"(prefers-color-scheme: light)"}],["$","meta","3",{"name":"theme-color","content":"#0B1016","media":"(prefers-color-scheme: dark)"}]]}],["$","div",null,{"hidden":true,"children":["$","$L9",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Blog · Sinhron"}],["$","meta","1",{"name":"description","content":"News, releases and behind-the-scenes notes from the Sinhron project."}],["$","meta","2",{"name":"application-name","content":"Sinhron"}],["$","link","3",{"rel":"canonical","href":"https://grossmanban.github.io/sinhron-website/en/blog/"}],["$","link","4",{"rel":"alternate","hrefLang":"ru","href":"https://grossmanban.github.io/sinhron-website/ru/blog/"}],["$","link","5",{"rel":"alternate","hrefLang":"en","href":"https://grossmanban.github.io/sinhron-website/en/blog/"}],["$","link","6",{"rel":"alternate","hrefLang":"x-default","href":"https://grossmanban.github.io/sinhron-website/en/blog/"}],["$","meta","7",{"name":"format-detection","content":"telephone=no"}],["$","meta","8",{"property":"og:title","content":"Sinhron — private messenger on your own server"}],["$","meta","9",{"property":"og:description","content":"An end-to-end encrypted messenger built on MLS. Your server, your keys, no phone number, no telemetry. Open source."}],["$","meta","10",{"property":"og:site_name","content":"Sinhron"}],["$","meta","11",{"property":"og:locale","content":"en_US"}],"$La","$Lb","$Lc","$Ld","$Le","$Lf","$L10","$L11","$L12","$L13","$L14","$L15"]}]}]}],"$L16"]}],"isPartial":"$@17","staleTime":"$7","varyParams":null},{"rsc":"$L18","isPartial":"$@19","staleTime":"$7","varyParams":"$1a"}],"isUpgradeableISRFallback":false,"a":"$@1b","rootVaryParams":null,"needsRuntimeRequest":"$@1c"}
+1d:I[27201,["/sinhron-website/_next/static/chunks/0h2qsuyze9ds1.js"],"IconMark"]
+1e:I[39756,["/sinhron-website/_next/static/chunks/0h2qsuyze9ds1.js"],"default"]
+1f:I[37457,["/sinhron-website/_next/static/chunks/0h2qsuyze9ds1.js"],"default"]
+5:null
+a:["$","meta","12",{"property":"og:image","content":"https://grossmanban.github.io/sinhron-website/og-en.png"}]
+b:["$","meta","13",{"property":"og:image:width","content":"1200"}]
+c:["$","meta","14",{"property":"og:image:height","content":"630"}]
+d:["$","meta","15",{"property":"og:image:alt","content":"Sinhron — your conversations, only yours"}]
+e:["$","meta","16",{"property":"og:type","content":"website"}]
+f:["$","meta","17",{"name":"twitter:card","content":"summary_large_image"}]
+10:["$","meta","18",{"name":"twitter:title","content":"Sinhron — private messenger on your own server"}]
+11:["$","meta","19",{"name":"twitter:description","content":"An end-to-end encrypted messenger built on MLS. Your server, your keys, no phone number, no telemetry. Open source."}]
+12:["$","meta","20",{"name":"twitter:image","content":"https://grossmanban.github.io/sinhron-website/og-en.png"}]
+13:["$","link","21",{"rel":"icon","href":"/sinhron-website/favicon.svg"}]
+14:["$","link","22",{"rel":"apple-touch-icon","href":"/sinhron-website/apple-touch-icon.png"}]
+15:["$","$L1d","23",{}]
+16:["$","meta",null,{"name":"next-size-adjust","content":""}]
+18:["$","$1","c",{"children":[null,["$","$L1e",null,{"parallelRouterKey":"children","template":["$","$L1f",null,{}]}]]}]
+1c:true
+7:300
+7:C
+1b:0
+17:"$undefined"
+19:"$undefined"
+6:"$undefined"

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/" />
+<changefreq>weekly</changefreq>
+<priority>1</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/download/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/download/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/download/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/getting-started/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/getting-started/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/getting-started/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/features/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/features/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/features/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/security/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/security/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/security/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/threat-model/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/threat-model/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/threat-model/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/self-hosting/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/self-hosting/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/self-hosting/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/architecture/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/architecture/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/architecture/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/roadmap/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/roadmap/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/roadmap/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/faq/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/faq/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/faq/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/docs/glossary/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/docs/glossary/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/docs/glossary/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/blog/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/blog/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/blog/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/blog/october-13-update/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/blog/october-13-update/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/blog/october-13-update/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/blog/hello-sinhron/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/blog/hello-sinhron/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/blog/hello-sinhron/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/changelog/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/changelog/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/changelog/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>https://grossmanban.github.io/sinhron-website/en/press/</loc>
+<xhtml:link rel="alternate" hreflang="ru" href="https://grossmanban.github.io/sinhron-website/ru/press/" />
+<xhtml:link rel="alternate" hreflang="en" href="https://grossmanban.github.io/sinhron-website/en/press/" />
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+</urlset>
